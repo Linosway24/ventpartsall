@@ -8,6 +8,16 @@
 </head>
 <body>
     <div id="scene-container"></div>
+    <div id="tooltip" class="tooltip"></div>
+    <div id="side-panel" class="side-panel">
+        <div class="panel-header">
+            <h2 id="part-name">Part Details</h2>
+            <button id="close-panel">&times;</button>
+        </div>
+        <div class="panel-content">
+            <div id="part-details">Select a part to view details</div>
+        </div>
+    </div>
     <script src="libs/three.min.js"></script>
     <script src="libs/OrbitControls.js"></script>
     <script src="libs/GLTFLoader.js"></script>
