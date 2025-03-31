@@ -1,0 +1,18 @@
+#scene-container {
+    position: relative; /* Ensure container establishes stacking context */
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.side-panel .panel-header button {
+    background: none;
+    border: none;
+    color: #ccc;
+    font-size: 1.5em;
+    cursor: pointer;
+    padding: 0 10px; /* Add some padding for easier clicking */
+    position: relative; /* Needed for z-index */
+    z-index: 9999;      /* Bring strongly to the front */
+    pointer-events: auto; /* Ensure it always accepts clicks */
+} 

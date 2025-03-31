@@ -23,6 +23,16 @@ class App {
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.container.appendChild(this.renderer.domElement);
 
+        // --- Define properties used by GUI and event listeners EARLY ---
+        this.ambientLight = null;
+        this.mainLight = null;
+        this.originalAmbientIntensity = 1.0; // Reset initial ambient intensity
+        this.originalDirectionalIntensity = 1.0; // Reset initial directional intensity
+        this.showBoundingBoxes = true;
+        this.interactiveGroup = new THREE.Group(); // Define group before listeners
+        this.scene.add(this.interactiveGroup);
+        // --- End early definitions ---
+
         this.setupLights();
 
         // Setup GLTF loader
@@ -50,7 +60,7 @@ class App {
         this.rotationSpeed = 0.01; // Speed of rotation
         this.isRotating = false;  // Flag to track whether rotation is active
         
-        // Add mouse event listeners
+        // Add mouse event listeners (Now safe to add)
         this.container.addEventListener('mousemove', this.onMouseMove.bind(this));
         this.container.addEventListener('mouseout', this.hideTooltip.bind(this));
         this.container.addEventListener('click', this.onClick.bind(this));
@@ -58,7 +68,7 @@ class App {
         // Add a separate event for the side panel - using right-click
         this.container.addEventListener('contextmenu', this.onRightClick.bind(this));
         
-        // Setup GUI
+        // Setup GUI (Now safe to call)
         this.setupGUI();
 
         // Handle window resize
@@ -75,17 +85,39 @@ class App {
         
         // Add flag to track side panel state
         this.sidePanelOpen = false;
+
+        // --- Add properties for lights and original intensities --- 
+        // Already defined earlier, remove or comment out these redundant lines
+        // this.ambientLight = null; 
+        // this.mainLight = null;
+        // this.originalAmbientIntensity = 1.0; // Default or initial value
+        // this.originalDirectionalIntensity = 1.0; // Default or initial value
+        // --- End added properties ---
+
+        // --- Add model loading state ---
+        this.modelsToLoad = 7; // Updated count for the Green Oxygen Hose model
+        this.modelsLoadedCount = 0; // How many have loaded
+        this.modelsReady = false; // Flag to enable interactions
+        // --- End model loading state ---
+
+        // --- Add light dimming factors --- 
+        // Already defined earlier, remove or comment out these redundant lines
+        // this.ambientDimFactor = 0.2; // Default dim factor for ambient light
+        // this.directionalDimFactor = 0.1; // Default dim factor for directional light
+        // --- End light dimming factors ---
     }
 
     setupLights() {
         // Ambient light
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
-        this.scene.add(ambientLight);
+        // --- Modify to store reference and use initial intensity --- 
+        this.ambientLight = new THREE.AmbientLight(0xffffff, this.originalAmbientIntensity); 
+        this.scene.add(this.ambientLight);
 
         // Main directional light
-        const mainLight = new THREE.DirectionalLight(0xffffff, 1.0);
-        mainLight.position.set(5, 5, 5);
-        this.scene.add(mainLight);
+        // --- Modify to store reference and use initial intensity --- 
+        this.mainLight = new THREE.DirectionalLight(0xffffff, this.originalDirectionalIntensity);
+        this.mainLight.position.set(5, 5, 5);
+        this.scene.add(this.mainLight);
 
         // Add grid helper
         const gridHelper = new THREE.GridHelper(20, 20, 0x888888, 0x444444);
@@ -100,10 +132,16 @@ class App {
     }
     
     setupGUI() {
-        // Create GUI
-        this.gui = new dat.GUI();
+        // Create GUI, but don't auto-place it
+        this.gui = new dat.GUI({ autoPlace: false });
         
-        // Add controls
+        // Hide GUI by default
+        this.gui.domElement.style.display = 'none';
+        
+        // Manually add the GUI to the container
+        this.container.appendChild(this.gui.domElement);
+        
+        // --- Bounding Box Control (Existing) ---
         const params = {
             showBoundingBoxes: this.showBoundingBoxes
         };
@@ -118,6 +156,60 @@ class App {
                     }
                 });
             });
+
+        // --- Lighting Controls ---
+        const lightFolder = this.gui.addFolder('Lighting');
+        
+        // Ambient Light
+        const ambientParams = {
+            intensity: this.ambientLight.intensity,
+            color: this.ambientLight.color.getHex()
+        };
+        lightFolder.add(ambientParams, 'intensity', 0, 2).name('Ambient Intensity').onChange(value => {
+            this.ambientLight.intensity = value;
+        });
+        lightFolder.addColor(ambientParams, 'color').name('Ambient Color').onChange(value => {
+            this.ambientLight.color.setHex(value);
+        });
+
+        // Directional Light
+        const directionalParams = {
+            intensity: this.mainLight.intensity,
+            color: this.mainLight.color.getHex(),
+            positionX: this.mainLight.position.x,
+            positionY: this.mainLight.position.y,
+            positionZ: this.mainLight.position.z
+        };
+        lightFolder.add(directionalParams, 'intensity', 0, 2).name('Directional Intensity').onChange(value => {
+            this.mainLight.intensity = value;
+        });
+        lightFolder.addColor(directionalParams, 'color').name('Directional Color').onChange(value => {
+            this.mainLight.color.setHex(value);
+        });
+        lightFolder.add(directionalParams, 'positionX', -20, 20).name('Dir Pos X').onChange(value => {
+            this.mainLight.position.x = value;
+        });
+        lightFolder.add(directionalParams, 'positionY', -20, 20).name('Dir Pos Y').onChange(value => {
+            this.mainLight.position.y = value;
+        });
+        lightFolder.add(directionalParams, 'positionZ', -20, 20).name('Dir Pos Z').onChange(value => {
+            this.mainLight.position.z = value;
+        });
+        
+        lightFolder.open(); // Open the folder by default
+
+        // --- Halyard Attachment Tube Controls ---
+        const halyardParams = {
+            scale: 2.0 // Initial scale factor
+        };
+        const halyardFolder = this.gui.addFolder('Halyard Attachment Tube');
+        halyardFolder.add(halyardParams, 'scale', 0.1, 10).name('Scale').onChange(value => {
+            const halyardGroup = this.interactiveGroup.children.find(child => child.name === 'Halyard Attachment Tube');
+            if (halyardGroup) {
+                halyardGroup.scale.setScalar(value);
+            }
+        });
+        halyardFolder.open();
     }
     
     // Helper method to create a bounding box for a model
@@ -169,9 +261,20 @@ class App {
     }
 
     loadModels() {
+        // --- Add counter function ---
+        const onModelLoad = (model) => {
+            this.interactiveGroup.add(model); // Add to interactive group
+            this.modelsLoadedCount++;
+            if (this.modelsLoadedCount === this.modelsToLoad) {
+                this.modelsReady = true;
+                console.log("All models loaded and ready for interaction.");
+            }
+        };
+        // --- End counter function ---
+
         // Load ventilator
         this.loader.load('assets/ventilator.glb', (gltf) => {
-            const ventilator = gltf.scene;
+            const ventilator = gltf.scene; // Use local const again
             
             // Get ventilator size
             const ventBox = new THREE.Box3().setFromObject(ventilator);
@@ -181,8 +284,8 @@ class App {
             const scale = (this.camera.top * 2 * 0.8) / ventSize.y;
             ventilator.scale.setScalar(scale);
             
-            // Position ventilator on the left
-            ventilator.position.set(-10, 0, 0);
+            // Position ventilator with minimal left padding
+            ventilator.position.set(-15, 0, 0); // Further left
             
             // Add name property for identification in raycasting
             ventilator.name = 'Ventilator Unit';
@@ -195,21 +298,21 @@ class App {
             ventilator.userData.originalScale = ventilator.scale.clone();
             ventilator.userData.originalRotation = ventilator.rotation.clone();
             
-            this.scene.add(ventilator);
-            
             // Create bounding box for ventilator (green)
             this.createBoundingBox(ventilator, 0x00ff00);
+
+            onModelLoad(ventilator); // Call the counter function
             
             // Now load the tube
             this.loader.load('assets/VentilatorTube-WhitePlastic.glb', (gltf) => {
-                const tube = gltf.scene;
+                const tube = gltf.scene; // Use local const again
                 
                 // Scale tube to be smaller than ventilator
-                tube.scale.setScalar(scale * 0.1125); // 75% of previous size (0.15 * 0.75 = 0.1125)
+                // Use the 'scale' calculated for the ventilator
+                tube.scale.setScalar(scale * 0.1125); 
                 
-                // Position tube with visible padding from the top of the screen
-                // and 5 units from the ventilator horizontally
-                tube.position.set(-2, 4, 0); // Moved further right to avoid hitting ventilator
+                // Position tube relative to ventilator
+                tube.position.set(-9, 4, 0); // Further left
                 
                 // Add name property for identification in raycasting
                 tube.name = 'Ventilator Tube';
@@ -222,12 +325,427 @@ class App {
                 tube.userData.originalScale = tube.scale.clone();
                 tube.userData.originalRotation = tube.rotation.clone();
                 
-                this.scene.add(tube);
-                
                 // Create bounding box for tube (blue)
                 this.createBoundingBox(tube, 0x0000ff);
+
+                onModelLoad(tube); // Call the counter function
+
             }, undefined, (error) => {
                 console.error('Error loading tube:', error);
+            });
+            
+            // Load the HEPA filter
+            this.loader.load('assets/HeppaAttachment-2025.glb', (gltf) => {
+                const hepaMesh = gltf.scene; // The actual mesh/scene object
+                const hepaFilterGroup = new THREE.Group(); // Create a parent group
+
+                // Calculate the center of the mesh
+                const box = new THREE.Box3().setFromObject(hepaMesh);
+                const center = box.getCenter(new THREE.Vector3());
+
+                // Offset the mesh position so its center is at the group's origin (0,0,0)
+                hepaMesh.position.sub(center);
+
+                // Add the centered mesh to the group
+                hepaFilterGroup.add(hepaMesh);
+
+                // --- Apply scale and position to the GROUP --- 
+                hepaFilterGroup.scale.setScalar(scale * 0.3); // Apply 30% scale to the group
+                // Set group position for HEPA filter
+                hepaFilterGroup.position.set(-3, 3, 0); // Restore HEPA filter position
+
+                // --- Assign userData to the GROUP --- 
+                hepaFilterGroup.name = 'HEPA Filter Attachment';
+                hepaFilterGroup.userData.tooltipText = 'High-Efficiency Particulate Air filter attachment';
+
+                // Save original transform data for the GROUP
+                hepaFilterGroup.userData.originalPosition = hepaFilterGroup.position.clone(); // Update original position
+                hepaFilterGroup.userData.originalScale = hepaFilterGroup.scale.clone();
+                hepaFilterGroup.userData.originalRotation = hepaFilterGroup.rotation.clone(); // Use group's initial rotation
+                
+                // Create bounding box for the GROUP (let's use yellow)
+                this.createBoundingBox(hepaFilterGroup, 0xffff00); 
+
+                // Add the GROUP to the interactive scene using the counter
+                onModelLoad(hepaFilterGroup);
+
+            }, undefined, (error) => {
+                console.error('Error loading HEPA filter:', error);
+            });
+            
+            // Load the Halyard Attachment Tube
+            this.loader.load('assets/HalyardAttachmentTube.glb', (gltf) => {
+                const halyardMesh = gltf.scene; // The actual mesh/scene object
+                const halyardGroup = new THREE.Group(); // Create a parent group
+
+                // Calculate the center of the mesh
+                const box = new THREE.Box3().setFromObject(halyardMesh);
+                const center = box.getCenter(new THREE.Vector3());
+
+                // Offset the mesh position so its center is at the group's origin (0,0,0)
+                halyardMesh.position.sub(center);
+
+                // Add the centered mesh to the group
+                halyardGroup.add(halyardMesh);
+
+                // Create an invisible box to improve raycaster detection
+                const boxGeometry = new THREE.BoxGeometry(15, 5, 5); // Larger dimensions
+                const boxMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, visible: false });
+                const invisibleBox = new THREE.Mesh(boxGeometry, boxMaterial);
+
+                // Add the invisible box to the group
+                halyardGroup.add(invisibleBox);
+
+                // --- Apply scale and position to the GROUP --- 
+                halyardGroup.scale.setScalar(20.0); // Original scale
+                halyardGroup.position.set(7, 3, 0); // Move to x=7
+
+                // --- Assign userData to the GROUP --- 
+                halyardGroup.name = 'Halyard Attachment Tube';
+                halyardGroup.userData.tooltipText = 'Halyard attachment tube for ventilation';
+
+                // Save original transform data for the GROUP
+                halyardGroup.userData.originalPosition = halyardGroup.position.clone();
+                halyardGroup.userData.originalScale = halyardGroup.scale.clone();
+                halyardGroup.userData.originalRotation = halyardGroup.rotation.clone(); // Use group's initial rotation
+                
+                // Create bounding box for the GROUP (let's use cyan)
+                this.createBoundingBox(halyardGroup, 0x00ffff); 
+
+                // Add the GROUP to the interactive scene using the counter
+                onModelLoad(halyardGroup);
+                console.log('Halyard Attachment Tube added to interactiveGroup:', halyardGroup);
+
+                // Verify bounding box
+                const halyardBox = new THREE.Box3().setFromObject(halyardGroup);
+                console.log('Halyard Attachment Tube bounding box dimensions:', halyardBox.getSize(new THREE.Vector3()));
+                console.log('Halyard Attachment Tube bounding box:', halyardBox);
+
+            }, undefined, (error) => {
+                console.error('Error loading Halyard Attachment Tube:', error);
+            });
+            
+            // Load the PulseOx model
+            console.log('Starting to load PulseOx model...');
+            this.loader.load('assets/PulseOx.glb', (gltf) => {
+                console.log('PulseOx model loaded successfully:', gltf);
+                const pulseOxMesh = gltf.scene;
+                console.log('PulseOx mesh:', pulseOxMesh);
+
+                // Debug mesh structure
+                pulseOxMesh.traverse((child) => {
+                    if (child.isMesh) {
+                        console.log('Found mesh:', child);
+                        console.log('Geometry:', child.geometry);
+                        console.log('Material:', child.material);
+                        console.log('Vertices:', child.geometry.attributes.position.count);
+                    }
+                });
+
+                const pulseOxGroup = new THREE.Group();
+
+                // Calculate the center of the mesh
+                const box = new THREE.Box3().setFromObject(pulseOxMesh);
+                const center = box.getCenter(new THREE.Vector3());
+                console.log('PulseOx bounding box:', box);
+                console.log('PulseOx center:', center);
+
+                // Center the mesh
+                pulseOxMesh.position.sub(center);
+                pulseOxGroup.add(pulseOxMesh);
+
+                // Add invisible box for better raycasting
+                const boxGeometry = new THREE.BoxGeometry(20, 10, 10); // Larger dimensions for better detection
+                const boxMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, visible: false });
+                const invisibleBox = new THREE.Mesh(boxGeometry, boxMaterial);
+                pulseOxGroup.add(invisibleBox);
+
+                // Scale and position
+                pulseOxGroup.scale.setScalar(0.2); // Much smaller scale
+                pulseOxGroup.position.set(17, 3, 5); // Position further right
+                pulseOxGroup.rotation.y = Math.PI/2; // Rotate 90 degrees around Y axis
+                pulseOxGroup.rotation.x = Math.PI/4; // Tilt 45 degrees away from camera
+                console.log('PulseOx final position:', pulseOxGroup.position);
+                console.log('PulseOx final scale:', pulseOxGroup.scale);
+                console.log('PulseOx final rotation:', pulseOxGroup.rotation);
+
+                // Debug final structure
+                console.log('Final PulseOx structure:');
+                pulseOxGroup.traverse((child) => {
+                    console.log('Child:', child.type, child.name, child.visible);
+                });
+
+                // Add metadata
+                pulseOxGroup.name = 'Pulse Oximeter';
+                pulseOxGroup.userData.tooltipText = 'Pulse oximeter for monitoring oxygen saturation';
+                pulseOxGroup.userData.originalPosition = pulseOxGroup.position.clone();
+                pulseOxGroup.userData.originalScale = pulseOxGroup.scale.clone();
+                pulseOxGroup.userData.originalRotation = pulseOxGroup.rotation.clone();
+
+                // Create bounding box (magenta)
+                this.createBoundingBox(pulseOxGroup, 0xff00ff);
+                console.log('PulseOx bounding box created');
+
+                // Ensure visibility
+                pulseOxGroup.visible = true;
+                pulseOxMesh.visible = true;
+                console.log('Visibility set:', pulseOxGroup.visible, pulseOxMesh.visible);
+
+                onModelLoad(pulseOxGroup);
+                console.log('PulseOx added to scene and ready');
+
+            }, 
+            // Add progress callback
+            (xhr) => {
+                console.log('PulseOx loading progress:', (xhr.loaded / xhr.total * 100) + '%');
+            },
+            (error) => {
+                console.error('Error loading PulseOx:', error);
+            });
+            
+            // Load the Glbeck humid vent
+            console.log('Starting to load Glbeck humid vent model...');
+            this.loader.load('assets/Gibeck Humid-Vent (1).glb', (gltf) => {
+                console.log('Glbeck humid vent model loaded successfully:', gltf);
+                const humidVentMesh = gltf.scene;
+                console.log('Glbeck humid vent mesh:', humidVentMesh);
+
+                const humidVentGroup = new THREE.Group();
+
+                // Calculate the center of the mesh
+                const box = new THREE.Box3().setFromObject(humidVentMesh);
+                const center = box.getCenter(new THREE.Vector3());
+                console.log('Glbeck humid vent bounding box:', box);
+                console.log('Glbeck humid vent center:', center);
+
+                // Center the mesh
+                humidVentMesh.position.sub(center);
+                humidVentGroup.add(humidVentMesh);
+
+                // Add invisible box for better raycaster detection
+                const boxGeometry = new THREE.BoxGeometry(5, 2, 2); // Smaller dimensions to match model
+                const boxMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, visible: false });
+                const invisibleBox = new THREE.Mesh(boxGeometry, boxMaterial);
+                humidVentGroup.add(invisibleBox);
+
+                // Scale and position
+                humidVentGroup.scale.setScalar(scale * 20.0); // Much larger scale
+                humidVentGroup.position.set(-9, -3.5, 0); // Move up to -3.5
+                humidVentGroup.rotation.y = Math.PI/2 + Math.PI/4; // Keep rotation
+                console.log('Glbeck humid vent final position:', humidVentGroup.position);
+                console.log('Glbeck humid vent final scale:', humidVentGroup.scale);
+                console.log('Glbeck humid vent final rotation:', humidVentGroup.rotation);
+
+                // Add metadata
+                humidVentGroup.name = 'Glbeck Humid Vent';
+                humidVentGroup.userData.tooltipText = 'Humidification vent for patient comfort';
+                humidVentGroup.userData.originalPosition = humidVentGroup.position.clone();
+                humidVentGroup.userData.originalScale = humidVentGroup.scale.clone();
+                humidVentGroup.userData.originalRotation = humidVentGroup.rotation.clone();
+
+                // Create bounding box (orange)
+                this.createBoundingBox(humidVentGroup, 0xffa500);
+                console.log('Glbeck humid vent bounding box created');
+
+                // Ensure visibility
+                humidVentGroup.visible = true;
+                humidVentMesh.visible = true;
+                console.log('Visibility set:', humidVentGroup.visible, humidVentMesh.visible);
+
+                onModelLoad(humidVentGroup);
+                console.log('Glbeck humid vent added to scene and ready');
+
+            }, 
+            // Add progress callback
+            (xhr) => {
+                console.log('Glbeck humid vent loading progress:', (xhr.loaded / xhr.total * 100) + '%');
+            },
+            (error) => {
+                console.error('Error loading Glbeck humid vent:', error);
+            });
+            
+            // Load the Oxygen Regulator
+            console.log('Starting to load Oxygen Regulator model...');
+            this.loader.load('assets/Oxygen Regulator.glb', (gltf) => {
+                console.log('Oxygen Regulator model loaded successfully:', gltf);
+                const oxygenRegulatorMesh = gltf.scene;
+                console.log('Oxygen Regulator mesh:', oxygenRegulatorMesh);
+
+                const oxygenRegulatorGroup = new THREE.Group();
+
+                // Calculate the center of the mesh
+                const box = new THREE.Box3().setFromObject(oxygenRegulatorMesh);
+                const center = box.getCenter(new THREE.Vector3());
+                console.log('Oxygen Regulator bounding box:', box);
+                console.log('Oxygen Regulator center:', center);
+
+                // Center the mesh
+                oxygenRegulatorMesh.position.sub(center);
+                oxygenRegulatorGroup.add(oxygenRegulatorMesh);
+
+                // Add invisible box for better raycasting
+                const boxGeometry = new THREE.BoxGeometry(5, 2, 2); // Smaller dimensions to match model
+                const boxMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, visible: false });
+                const invisibleBox = new THREE.Mesh(boxGeometry, boxMaterial);
+                oxygenRegulatorGroup.add(invisibleBox);
+
+                // Scale and position
+                oxygenRegulatorGroup.scale.setScalar(scale * 20.0); // Same scale as Glbeck
+                oxygenRegulatorGroup.position.set(-3, -3.5, 0); // Same Y as Glbeck, different X
+                oxygenRegulatorGroup.rotation.y = Math.PI/2 + Math.PI/4; // Same rotation as Glbeck
+                console.log('Oxygen Regulator final position:', oxygenRegulatorGroup.position);
+                console.log('Oxygen Regulator final scale:', oxygenRegulatorGroup.scale);
+                console.log('Oxygen Regulator final rotation:', oxygenRegulatorGroup.rotation);
+
+                // Add metadata
+                oxygenRegulatorGroup.name = 'Oxygen Regulator';
+                oxygenRegulatorGroup.userData.tooltipText = 'Oxygen flow regulator for controlling oxygen delivery';
+                oxygenRegulatorGroup.userData.originalPosition = oxygenRegulatorGroup.position.clone();
+                oxygenRegulatorGroup.userData.originalScale = oxygenRegulatorGroup.scale.clone();
+                oxygenRegulatorGroup.userData.originalRotation = oxygenRegulatorGroup.rotation.clone();
+
+                // Create bounding box (purple)
+                this.createBoundingBox(oxygenRegulatorGroup, 0x800080);
+                console.log('Oxygen Regulator bounding box created');
+
+                // Ensure visibility
+                oxygenRegulatorGroup.visible = true;
+                oxygenRegulatorMesh.visible = true;
+                console.log('Visibility set:', oxygenRegulatorGroup.visible, oxygenRegulatorMesh.visible);
+
+                onModelLoad(oxygenRegulatorGroup);
+                console.log('Oxygen Regulator added to scene and ready');
+
+            }, 
+            // Add progress callback
+            (xhr) => {
+                console.log('Oxygen Regulator loading progress:', (xhr.loaded / xhr.total * 100) + '%');
+            },
+            (error) => {
+                console.error('Error loading Oxygen Regulator:', error);
+            });
+            
+            // Load the Test Lung
+            console.log('Starting to load Test Lung model...');
+            this.loader.load('assets/Test Lung 210-2025 1.glb', (gltf) => {
+                console.log('Test Lung model loaded successfully:', gltf);
+                const testLungMesh = gltf.scene;
+                console.log('Test Lung mesh:', testLungMesh);
+
+                const testLungGroup = new THREE.Group();
+
+                // Calculate the center of the mesh
+                const box = new THREE.Box3().setFromObject(testLungMesh);
+                const center = box.getCenter(new THREE.Vector3());
+                console.log('Test Lung bounding box:', box);
+                console.log('Test Lung center:', center);
+
+                // Center the mesh
+                testLungMesh.position.sub(center);
+                testLungGroup.add(testLungMesh);
+
+                // Add invisible box for better raycaster detection
+                const boxGeometry = new THREE.BoxGeometry(5, 2, 2); // Smaller dimensions to match model
+                const boxMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, visible: false });
+                const invisibleBox = new THREE.Mesh(boxGeometry, boxMaterial);
+                testLungGroup.add(invisibleBox);
+
+                // Scale and position
+                testLungGroup.scale.setScalar(scale * 0.2); // Reduced from 0.5 to 0.2
+                testLungGroup.position.set(3, -3.5, 0); // To the right of Oxygen Regulator
+                testLungGroup.rotation.y = Math.PI/2 + Math.PI/4; // Same rotation as other models
+                console.log('Test Lung final position:', testLungGroup.position);
+                console.log('Test Lung final scale:', testLungGroup.scale);
+                console.log('Test Lung final rotation:', testLungGroup.rotation);
+
+                // Add metadata
+                testLungGroup.name = 'Test Lung';
+                testLungGroup.userData.tooltipText = 'Test lung for ventilator calibration and testing';
+                testLungGroup.userData.originalPosition = testLungGroup.position.clone();
+                testLungGroup.userData.originalScale = testLungGroup.scale.clone();
+                testLungGroup.userData.originalRotation = testLungGroup.rotation.clone();
+
+                // Create bounding box (red)
+                this.createBoundingBox(testLungGroup, 0xff0000);
+                console.log('Test Lung bounding box created');
+
+                // Ensure visibility
+                testLungGroup.visible = true;
+                testLungMesh.visible = true;
+                console.log('Visibility set:', testLungGroup.visible, testLungMesh.visible);
+
+                onModelLoad(testLungGroup);
+                console.log('Test Lung added to scene and ready');
+
+            }, 
+            // Add progress callback
+            (xhr) => {
+                console.log('Test Lung loading progress:', (xhr.loaded / xhr.total * 100) + '%');
+            },
+            (error) => {
+                console.error('Error loading Test Lung:', error);
+            });
+            
+            // Load the Green Oxygen Hose
+            console.log('Starting to load Green Oxygen Hose model...');
+            this.loader.load('assets/Green Oxygen Hose.glb', (gltf) => {
+                console.log('Green Oxygen Hose model loaded successfully:', gltf);
+                const greenOxygenHoseMesh = gltf.scene;
+                console.log('Green Oxygen Hose mesh:', greenOxygenHoseMesh);
+
+                const greenOxygenHoseGroup = new THREE.Group();
+
+                // Calculate the center of the mesh
+                const box = new THREE.Box3().setFromObject(greenOxygenHoseMesh);
+                const center = box.getCenter(new THREE.Vector3());
+                console.log('Green Oxygen Hose bounding box:', box);
+                console.log('Green Oxygen Hose center:', center);
+
+                // Center the mesh
+                greenOxygenHoseMesh.position.sub(center);
+                greenOxygenHoseGroup.add(greenOxygenHoseMesh);
+
+                // Add invisible box for better raycaster detection
+                const boxGeometry = new THREE.BoxGeometry(0.025, 0.025, 0.025); // Reduced to half the previous size
+                const boxMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, visible: false });
+                const invisibleBox = new THREE.Mesh(boxGeometry, boxMaterial);
+                greenOxygenHoseGroup.add(invisibleBox);
+
+                // Scale and position
+                greenOxygenHoseGroup.scale.setScalar(scale * 20.0);
+                greenOxygenHoseGroup.position.set(12, -3.5, 0); // Moved 3 units right from x=9
+                greenOxygenHoseGroup.rotation.y = Math.PI/2 + Math.PI/4; // Keep existing rotation
+                greenOxygenHoseGroup.rotation.x = Math.PI/4; // Add 45-degree forward rotation
+                console.log('Green Oxygen Hose final position:', greenOxygenHoseGroup.position);
+                console.log('Green Oxygen Hose final scale:', greenOxygenHoseGroup.scale);
+                console.log('Green Oxygen Hose final rotation:', greenOxygenHoseGroup.rotation);
+
+                // Add metadata
+                greenOxygenHoseGroup.name = 'Green Oxygen Hose';
+                greenOxygenHoseGroup.userData.tooltipText = 'Green oxygen hose for oxygen delivery';
+                greenOxygenHoseGroup.userData.originalPosition = greenOxygenHoseGroup.position.clone();
+                greenOxygenHoseGroup.userData.originalScale = greenOxygenHoseGroup.scale.clone();
+                greenOxygenHoseGroup.userData.originalRotation = greenOxygenHoseGroup.rotation.clone();
+
+                // Create bounding box (green)
+                this.createBoundingBox(greenOxygenHoseGroup, 0x00ff00);
+                console.log('Green Oxygen Hose bounding box created');
+
+                // Ensure visibility
+                greenOxygenHoseGroup.visible = true;
+                greenOxygenHoseMesh.visible = true;
+                console.log('Visibility set:', greenOxygenHoseGroup.visible, greenOxygenHoseMesh.visible);
+
+                onModelLoad(greenOxygenHoseGroup);
+                console.log('Green Oxygen Hose added to scene and ready');
+
+            }, 
+            // Add progress callback
+            (xhr) => {
+                console.log('Green Oxygen Hose loading progress:', (xhr.loaded / xhr.total * 100) + '%');
+            },
+            (error) => {
+                console.error('Error loading Green Oxygen Hose:', error);
             });
             
         }, undefined, (error) => {
@@ -237,12 +755,16 @@ class App {
 
     onWindowResize() {
         const aspect = this.container.clientWidth / this.container.clientHeight;
-        const frustumSize = 15; // Increased to accommodate both models
+        const frustumSize = 15; // Back to the original simple resize
+        
+        // Update camera 
         this.camera.left = frustumSize * aspect / -2;
         this.camera.right = frustumSize * aspect / 2;
         this.camera.top = frustumSize / 2;
         this.camera.bottom = frustumSize / -2;
         this.camera.updateProjectionMatrix();
+        
+        // Update renderer size
         this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
     }
 
@@ -262,14 +784,8 @@ class App {
         
         // Rotate the model if we're in rotation mode
         if (this.isRotating && this.zoomedModel) {
-            // Store original position
-            const originalPos = new THREE.Vector3(2, 1.5, 0);
-            
             // Apply rotation
             this.zoomedModel.rotation.y += this.rotationSpeed;
-            
-            // Reset position to ensure it doesn't move during rotation
-            this.zoomedModel.position.set(originalPos.x, originalPos.y, originalPos.z);
         }
         
         this.renderer.render(this.scene, this.camera);
@@ -277,6 +793,10 @@ class App {
 
     // Handle mouse movement for tooltip
     onMouseMove(event) {
+        // --- Add check for interactiveGroup ---
+        if (!this.interactiveGroup) return; // Exit if group not ready
+        // --- End check ---
+
         // Calculate mouse position in normalized device coordinates (-1 to +1)
         this.mouse.x = (event.clientX / this.container.clientWidth) * 2 - 1;
         this.mouse.y = -(event.clientY / this.container.clientHeight) * 2 + 1;
@@ -284,8 +804,8 @@ class App {
         // Update the raycaster
         this.raycaster.setFromCamera(this.mouse, this.camera);
         
-        // Get all objects intersecting the ray
-        const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+        // Get all objects intersecting the ray FROM THE INTERACTIVE GROUP
+        const intersects = this.raycaster.intersectObjects(this.interactiveGroup.children, true);
         
         let showTooltip = false;
         let hoveredObject = null;
@@ -378,6 +898,19 @@ class App {
 
     // Handle click events
     onClick(event) {
+        // --- Add check for models ready ---
+        if (!this.modelsReady) {
+            console.log("Models not ready yet, ignoring click.");
+            return;
+        }
+        // --- End check ---
+
+        // Ignore clicks originating from within the side panel
+        if (this.sidePanel && this.sidePanel.contains(event.target)) {
+            console.log("Click originated inside side panel. Ignoring in container listener.");
+            return; 
+        }
+        
         // Calculate mouse position
         const rect = this.container.getBoundingClientRect();
         this.mouse.x = ((event.clientX - rect.left) / this.container.clientWidth) * 2 - 1;
@@ -386,40 +919,54 @@ class App {
         // Update raycaster
         this.raycaster.setFromCamera(this.mouse, this.camera);
         
-        // Find intersections
-        const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+        // Find intersections ONLY WITHIN THE INTERACTIVE GROUP
+        const intersects = this.raycaster.intersectObjects(this.interactiveGroup.children, true);
         
+        // Debugging: Log intersected objects
+        console.log('Intersected objects:', intersects.map(intersect => intersect.object.name));
+
         if (intersects.length > 0) {
             const object = intersects[0].object;
             
-            // Find the top-level model
             let model = object;
-            while (model && model.parent !== this.scene) {
+            // Stop climbing when the parent is the interactiveGroup
+            while (model && model.parent !== this.interactiveGroup && model.parent !== this.scene) { 
                 model = model.parent;
             }
             
-            // Nothing was found
-            if (!model) return;
+            if (!model || model === this.interactiveGroup) return; // Skip if we didn't find a model or ended up at the group itself
             
-            // Handle animations for the tube
-            if (model.name === 'Ventilator Tube') {
-                // Check if we're already zoomed in
-                if (this.isZoomed) {
-                    // If zoomed in, zoom out
+            console.log('Clicked model:', model.name, model); 
+            
+            // Check if the clicked model is the Tube, HEPA Filter, Halyard Attachment Tube, or PulseOx
+            if (model.name === 'Ventilator Tube' || model.name === 'HEPA Filter Attachment' || 
+                model.name === 'Halyard Attachment Tube' || model.name === 'Pulse Oximeter' ||
+                model.name === 'Glbeck Humid Vent' || model.name === 'Oxygen Regulator' ||
+                model.name === 'Test Lung' || model.name === 'Green Oxygen Hose') {
+                console.log(model.name + ' clicked. Zoom state:', this.isZoomed);
+                if (this.isZoomed && this.zoomedModel === model) { // Only zoom out if it's the currently zoomed model
                     this.zoomOut();
-                } else {
-                    // If not zoomed in, zoom in
+                } else if (!this.isZoomed) { // Only zoom in if nothing is currently zoomed
                     this.zoomIn(model);
                 }
-                
-                // Show the side panel after a slight delay
-                setTimeout(() => {
-                    this.showSidePanel(model);
-                }, 300);
+                // Always show side panel, maybe after a delay if zooming in
+                if (!this.isZoomed || (this.isZoomed && this.zoomedModel !== model)) {
+                     // If zooming in or clicking a different model while zoomed, show panel after delay
+                    setTimeout(() => { this.showSidePanel(model); }, 300); 
+                } else {
+                     // If zooming out, show panel immediately (or handle closing elsewhere)
+                     this.showSidePanel(model);
+                }
             } else {
-                // For other models, just show the side panel without animation
-                this.showSidePanel(model);
+                console.log('Other model clicked:', model.name);
+                // If something else is zoomed, zoom out first
+                if (this.isZoomed) {
+                    this.zoomOut();
+                }
+                this.showSidePanel(model); // Show panel for non-zoomable models
             }
+        } else {
+             console.log('Clicked on empty space');
         }
     }
     
@@ -427,25 +974,35 @@ class App {
     zoomIn(model) {
         if (this.isZoomed) return;
         
-        // Set zoom state
         this.isZoomed = true;
         this.zoomedModel = model;
-        
-        // Hide tooltip
         this.hideTooltip();
+        this.boundingBoxes.forEach(box => { if (box) box.visible = false; });
+
+        // --- Animate background dimming --- 
+        // Removed background animation
+
+        // --- Hide other objects ---
+        // Removed hiding logic
+
+        // --- Dim Lights (Existing) --- 
+        // Removed light dimming animations
+        /*
+        if (this.ambientLight && this.mainLight) {
+            // ... removed code ...
+        }
+        */
+        // --- End Dim Lights ---
         
-        // Hide bounding boxes during zoom
-        this.boundingBoxes.forEach(box => {
-            if (box) {
-                box.visible = false;
-            }
-        });
+        // --- Activate Spotlight ---
+        // Removed spotlight activation
+        // --- End Activate Spotlight ---
         
-        // Determine target position (center of screen, but 1.5 units higher)
-        const targetPosition = new THREE.Vector3(2, 1.5, 0); // Moved to the right and higher
+        // Determine target position (center of screen, slightly forward)
+        const targetPosition = new THREE.Vector3(0, 0, 5); // Center screen target
         
-        // Determine target scale (reduced slightly to ensure full visibility)
-        const targetScale = model.scale.clone().multiplyScalar(1.75); // Reduced from 2.0 to 1.75
+        // Determine target scale (increased for better visibility when zoomed)
+        const targetScale = model.userData.originalScale.clone().multiplyScalar(2.5); // Increased from 1.75
         
         // Use GSAP to animate ONLY the tube's position and scale
         gsap.to(model.position, {
@@ -455,7 +1012,6 @@ class App {
             duration: 1,
             ease: "power2.inOut",
             onComplete: () => {
-                // Start rotating the model once it's in position
                 this.isRotating = true;
             }
         });
@@ -474,9 +1030,26 @@ class App {
         if (!this.isZoomed || !this.zoomedModel) return;
         
         const model = this.zoomedModel;
-        
-        // Stop the rotation
         this.isRotating = false;
+        
+        // --- Restore background color ---
+        // Removed background animation
+
+        // --- Restore other objects ---
+        // Removed object restoration logic
+
+        // --- Restore Lights (Existing) --- 
+        // Removed light restoration animations
+        /*
+        if (this.ambientLight && this.mainLight) {
+            // ... removed code ... 
+        }
+        */
+        // --- End Restore Lights ---
+        
+        // --- Deactivate Spotlight ---
+        // Removed spotlight deactivation
+        // --- End Deactivate Spotlight ---
         
         // Get original transform values
         const origPos = model.userData.originalPosition;
@@ -511,7 +1084,12 @@ class App {
                 // Reset zoom state
                 this.isZoomed = false;
                 this.zoomedModel = null;
-                
+
+                // Close side panel if no model is zoomed in
+                if (!this.isZoomed) {
+                    this.closeSidePanel();
+                }
+
                 // Restore bounding box visibility
                 if (this.showBoundingBoxes) {
                     this.boundingBoxes.forEach(box => {
@@ -555,10 +1133,7 @@ class App {
         const closeButton = document.createElement('button');
         closeButton.id = 'close-panel';
         closeButton.innerHTML = '&times;';
-        closeButton.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent click from bubbling to container
-            this.closeSidePanel();
-        });
+        console.log("Created close button element:", closeButton);
         
         // Create panel content
         const panelContent = document.createElement('div');
@@ -620,23 +1195,54 @@ class App {
         detailsElement.innerHTML = detailsHTML || 'No details available for this part.';
     }
 
-    // Show side panel without affecting other behavior
+    // Show side panel with details
     showSidePanel(model) {
         const panel = document.getElementById('side-panel');
-        
-        // Update the panel information
-        this.updateSidePanelInfo(model);
-        
-        // Show the panel
-        panel.classList.add('open');
-        this.sidePanelOpen = true;
+        const partName = document.getElementById('part-name');
+        const partDetails = document.getElementById('part-details');
+
+        if (panel && partName && partDetails) {
+            partName.textContent = model.name || 'Selected Part';
+            partDetails.textContent = model.userData.tooltipText || 'No details available.';
+            panel.classList.add('open');
+            this.sidePanelOpen = true;
+            
+            // --- ADD LISTENER LOGIC HERE ---
+            const closeButton = panel.querySelector('#close-panel');
+            if (closeButton && !closeButton.dataset.listenerAttached) {
+                console.log("Attaching listener to close button inside showSidePanel");
+                closeButton.addEventListener('click', (e) => {
+                    console.log("Close button clicked (listener attached in showSidePanel)");
+                    e.stopPropagation();
+                    if (this.isZoomed && this.zoomedModel) {
+                        console.log("Zoomed model detected, calling zoomOut()...");
+                        this.zoomOut();
+                    }
+                    console.log("Calling closeSidePanel()...");
+                    this.closeSidePanel();
+                });
+                closeButton.dataset.listenerAttached = 'true'; // Mark listener as attached
+            }
+             // --- END LISTENER LOGIC ---
+             
+        } else {
+            console.error('Side panel elements not found!');
+        }
     }
 
     // Close side panel
     closeSidePanel() {
+        console.log("Inside closeSidePanel method");
         const panel = document.getElementById('side-panel');
-        panel.classList.remove('open');
+        if (panel) {
+            console.log("Panel found. Current classes before removal:", panel.className);
+            panel.classList.remove('open');
+            console.log("Panel classes after removal:", panel.className);
+        } else {
+            console.error("Could not find side panel element!");
+        }
         this.sidePanelOpen = false;
+        console.log("Side panel state set to closed.");
     }
 
     // Helper to find the parent model of an intersected object
@@ -662,22 +1268,45 @@ class App {
         // Update raycaster
         this.raycaster.setFromCamera(this.mouse, this.camera);
         
-        // Find intersections
-        const sideIntersects = this.raycaster.intersectObjects(this.scene.children, true);
+        // Find intersections ONLY WITHIN THE INTERACTIVE GROUP
+        const sideIntersects = this.raycaster.intersectObjects(this.interactiveGroup.children, true);
         
         if (sideIntersects.length > 0) {
             const object = sideIntersects[0].object;
             
-            // Find the top-level model
             let model = object;
-            while (model && model.parent !== this.scene) {
+            // Stop climbing when the parent is the interactiveGroup
+            while (model && model.parent !== this.interactiveGroup && model.parent !== this.scene) {
                 model = model.parent;
             }
             
-            // If we found a model, show its info
-            if (model) {
+            // If we found a model (and not the group itself), show its info
+            if (model && model !== this.interactiveGroup) {
                 this.showSidePanel(model);
             }
+        }
+    }
+
+    // --- Helper functions for dimming/restoring materials ---
+    // Removed helper functions dimObjectMaterials and restoreObjectMaterials
+    // --- End Helper functions ---
+
+    toggleGUIVisibility() {
+        const guiElement = this.gui.domElement;
+        const offset = 5; // Offset amount when GUI is shown
+        
+        if (guiElement.style.display === 'none') {
+            guiElement.style.display = 'block';
+            // Shift models right when GUI is shown
+            this.interactiveGroup.children.forEach(model => {
+                model.position.x += offset;
+            });
+        } else {
+            guiElement.style.display = 'none';
+            // Shift models left when GUI is hidden
+            this.interactiveGroup.children.forEach(model => {
+                model.position.x -= offset;
+            });
         }
     }
 }
@@ -690,6 +1319,9 @@ window.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('keydown', (event) => {
         if (event.key === 'b' || event.key === 'B') {
             app.toggleBoundingBoxes();
+        }
+        if (event.key === 'g' || event.key === 'G') {
+            app.toggleGUIVisibility();
         }
     });
 }); 

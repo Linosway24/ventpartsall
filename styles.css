@@ -108,4 +108,14 @@ html, body {
     font-weight: bold;
     color: #63e6be;
     margin-right: 5px;
+}
+
+/* Position dat.GUI in the top-left */
+.dg.main {
+    position: absolute; /* Ensure it's positioned relative to the container */
+    top: 10px;          /* Add some padding from the top */
+    left: 10px;         /* Add some padding from the left */
+    z-index: 100;       /* Ensure it stays above the canvas */
+    background-color: #2a313b;
+    border-radius: 5px;
 } 
