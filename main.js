@@ -3,7 +3,7 @@ class App {
         this.container = document.getElementById('scene-container');
         
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x1c2430);
+        this.scene.background = new THREE.Color(0x1c2430); // Restore dark blue background
         
         // Calculate orthographic camera frustum
         const aspect = this.container.clientWidth / this.container.clientHeight;
@@ -22,6 +22,12 @@ class App {
         this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.container.appendChild(this.renderer.domElement);
+
+        // --- Enhanced Renderer settings for HDR ---
+        this.renderer.physicallyCorrectLights = true;
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 7.0; // Decreased from 10.0 to 7.0
+        this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
         // --- Define properties used by GUI and event listeners EARLY ---
         this.ambientLight = null;
@@ -95,7 +101,7 @@ class App {
         // --- End added properties ---
 
         // --- Add model loading state ---
-        this.modelsToLoad = 7; // Updated count for the Green Oxygen Hose model
+        this.modelsToLoad = 8; // Updated count to include the Power Adapter
         this.modelsLoadedCount = 0; // How many have loaded
         this.modelsReady = false; // Flag to enable interactions
         // --- End model loading state ---
@@ -108,26 +114,38 @@ class App {
     }
 
     setupLights() {
-        // Ambient light
-        // --- Modify to store reference and use initial intensity --- 
-        this.ambientLight = new THREE.AmbientLight(0xffffff, this.originalAmbientIntensity); 
-        this.scene.add(this.ambientLight);
+        // --- Load HDR environment map with PMREMGenerator ---
+        const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
+        pmremGenerator.compileEquirectangularShader();
 
-        // Main directional light
-        // --- Modify to store reference and use initial intensity --- 
-        this.mainLight = new THREE.DirectionalLight(0xffffff, this.originalDirectionalIntensity);
-        this.mainLight.position.set(5, 5, 5);
-        this.scene.add(this.mainLight);
+        const rgbeLoader = new THREE.RGBELoader();
+        rgbeLoader.setDataType(THREE.FloatType);
+        rgbeLoader.load('libs/TS Studio Tabletop.hdr', (texture) => {
+            texture.mapping = THREE.EquirectangularReflectionMapping;
+            
+            // Only use HDR for environment lighting, not background
+            const envMap = pmremGenerator.fromEquirectangular(texture).texture;
+            this.scene.environment = envMap;
+            
+            // Add ambient light to boost overall brightness
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            this.scene.add(ambientLight);
+            
+            texture.dispose();
+            pmremGenerator.dispose();
+            
+            console.log("HDR loaded and processed with PMREM");
+        }, undefined, (error) => {
+            console.error('Error loading HDR:', error);
+        });
 
-        // Add grid helper
+        // Keep Grid Helper and Marker
         const gridHelper = new THREE.GridHelper(20, 20, 0x888888, 0x444444);
         this.scene.add(gridHelper);
-
-        // Add position marker (red sphere)
         const markerGeometry = new THREE.SphereGeometry(0.2, 32, 32);
         const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
         this.positionMarker = new THREE.Mesh(markerGeometry, markerMaterial);
-        this.positionMarker.position.set(5, 0, 0); // Example position - right side
+        this.positionMarker.position.set(5, 0, 0);
         this.scene.add(this.positionMarker);
     }
     
@@ -156,47 +174,6 @@ class App {
                     }
                 });
             });
-
-        // --- Lighting Controls ---
-        const lightFolder = this.gui.addFolder('Lighting');
-        
-        // Ambient Light
-        const ambientParams = {
-            intensity: this.ambientLight.intensity,
-            color: this.ambientLight.color.getHex()
-        };
-        lightFolder.add(ambientParams, 'intensity', 0, 2).name('Ambient Intensity').onChange(value => {
-            this.ambientLight.intensity = value;
-        });
-        lightFolder.addColor(ambientParams, 'color').name('Ambient Color').onChange(value => {
-            this.ambientLight.color.setHex(value);
-        });
-
-        // Directional Light
-        const directionalParams = {
-            intensity: this.mainLight.intensity,
-            color: this.mainLight.color.getHex(),
-            positionX: this.mainLight.position.x,
-            positionY: this.mainLight.position.y,
-            positionZ: this.mainLight.position.z
-        };
-        lightFolder.add(directionalParams, 'intensity', 0, 2).name('Directional Intensity').onChange(value => {
-            this.mainLight.intensity = value;
-        });
-        lightFolder.addColor(directionalParams, 'color').name('Directional Color').onChange(value => {
-            this.mainLight.color.setHex(value);
-        });
-        lightFolder.add(directionalParams, 'positionX', -20, 20).name('Dir Pos X').onChange(value => {
-            this.mainLight.position.x = value;
-        });
-        lightFolder.add(directionalParams, 'positionY', -20, 20).name('Dir Pos Y').onChange(value => {
-            this.mainLight.position.y = value;
-        });
-        lightFolder.add(directionalParams, 'positionZ', -20, 20).name('Dir Pos Z').onChange(value => {
-            this.mainLight.position.z = value;
-        });
-        
-        lightFolder.open(); // Open the folder by default
 
         // --- Halyard Attachment Tube Controls ---
         const halyardParams = {
@@ -263,6 +240,23 @@ class App {
     loadModels() {
         // --- Add counter function ---
         const onModelLoad = (model) => {
+            // Log material types used by the model
+            console.log(`Checking materials for: ${model.name}`);
+            model.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    // Log material type for each mesh
+                    console.log(`  - Mesh: ${child.name || '(no name)'}, Material Type: ${child.material.type}`);
+                    // If multiple materials, log them all
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach((mat, index) => {
+                            console.log(`    - Material[${index}]: ${mat.type}`);
+                        });
+                    } else {
+                        // Already logged single material type above
+                    }
+                }
+            });
+
             this.interactiveGroup.add(model); // Add to interactive group
             this.modelsLoadedCount++;
             if (this.modelsLoadedCount === this.modelsToLoad) {
@@ -583,7 +577,7 @@ class App {
                 oxygenRegulatorMesh.position.sub(center);
                 oxygenRegulatorGroup.add(oxygenRegulatorMesh);
 
-                // Add invisible box for better raycasting
+                // Add invisible box for better raycaster detection
                 const boxGeometry = new THREE.BoxGeometry(5, 2, 2); // Smaller dimensions to match model
                 const boxMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, visible: false });
                 const invisibleBox = new THREE.Mesh(boxGeometry, boxMaterial);
@@ -712,8 +706,8 @@ class App {
                 greenOxygenHoseGroup.add(invisibleBox);
 
                 // Scale and position
-                greenOxygenHoseGroup.scale.setScalar(scale * 20.0);
-                greenOxygenHoseGroup.position.set(12, -3.5, 0); // Moved 3 units right from x=9
+                greenOxygenHoseGroup.scale.setScalar(scale * 16.2); // Reduced by another 10% from 18.0
+                greenOxygenHoseGroup.position.set(10, -3.5, 0); // Moved 2 units left from x=12
                 greenOxygenHoseGroup.rotation.y = Math.PI/2 + Math.PI/4; // Keep existing rotation
                 greenOxygenHoseGroup.rotation.x = Math.PI/4; // Add 45-degree forward rotation
                 console.log('Green Oxygen Hose final position:', greenOxygenHoseGroup.position);
@@ -740,12 +734,73 @@ class App {
                 console.log('Green Oxygen Hose added to scene and ready');
 
             }, 
-            // Add progress callback
             (xhr) => {
                 console.log('Green Oxygen Hose loading progress:', (xhr.loaded / xhr.total * 100) + '%');
             },
             (error) => {
                 console.error('Error loading Green Oxygen Hose:', error);
+            });
+            
+            // Load the 731 Power Adapter
+            console.log('Starting to load 731 Power Adapter model...');
+            this.loader.load('assets/731%20Power%20Adapter.glb', (gltf) => {
+                console.log('731 Power Adapter model loaded successfully:', gltf);
+                const powerAdapterMesh = gltf.scene;
+                console.log('731 Power Adapter mesh:', powerAdapterMesh);
+
+                const powerAdapterGroup = new THREE.Group();
+
+                // Calculate the center of the mesh
+                const box = new THREE.Box3().setFromObject(powerAdapterMesh);
+                const center = box.getCenter(new THREE.Vector3());
+                console.log('731 Power Adapter bounding box:', box);
+                console.log('731 Power Adapter center:', center);
+
+                // Center the mesh
+                powerAdapterMesh.position.sub(center);
+                powerAdapterGroup.add(powerAdapterMesh);
+
+                // Add invisible box for better raycaster detection
+                const boxGeometry = new THREE.BoxGeometry(5, 2, 2);
+                const boxMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, visible: false });
+                const invisibleBox = new THREE.Mesh(boxGeometry, boxMaterial);
+                powerAdapterGroup.add(invisibleBox);
+
+                // Scale and position - starting with larger scale since we can't see it
+                powerAdapterGroup.scale.setScalar(scale * 0.121); // Increased by another 10% from 0.11
+                powerAdapterGroup.position.set(18, -3.5, 0); // Moved 3 units right from x=15
+                powerAdapterGroup.rotation.y = Math.PI/2 + Math.PI/4;
+                powerAdapterGroup.rotation.x = Math.PI/4;
+
+                // Add metadata
+                powerAdapterGroup.name = '731 Power Adapter';
+                powerAdapterGroup.userData.tooltipText = '731 Power Adapter for ventilator power supply';
+                powerAdapterGroup.userData.originalPosition = powerAdapterGroup.position.clone();
+                powerAdapterGroup.userData.originalScale = powerAdapterGroup.scale.clone();
+                powerAdapterGroup.userData.originalRotation = powerAdapterGroup.rotation.clone();
+
+                // Create bounding box (brown)
+                this.createBoundingBox(powerAdapterGroup, 0x8B4513);
+
+                // Add to scene BEFORE setting up visibility
+                this.interactiveGroup.add(powerAdapterGroup);
+
+                // Ensure visibility after adding to scene
+                powerAdapterGroup.visible = true;
+                powerAdapterMesh.visible = true;
+                console.log('Power Adapter visibility:', powerAdapterGroup.visible, powerAdapterMesh.visible);
+                console.log('Power Adapter parent:', powerAdapterGroup.parent);
+                console.log('Power Adapter world position:', powerAdapterGroup.getWorldPosition(new THREE.Vector3()));
+
+                onModelLoad(powerAdapterGroup);
+                console.log('731 Power Adapter added to scene and ready');
+
+            }, 
+            (xhr) => {
+                console.log('731 Power Adapter loading progress:', (xhr.loaded / xhr.total * 100) + '%');
+            },
+            (error) => {
+                console.error('Error loading 731 Power Adapter:', error);
             });
             
         }, undefined, (error) => {
@@ -755,7 +810,7 @@ class App {
 
     onWindowResize() {
         const aspect = this.container.clientWidth / this.container.clientHeight;
-        const frustumSize = 15; // Back to the original simple resize
+        const frustumSize = 15; // Base frustum size
         
         // Update camera 
         this.camera.left = frustumSize * aspect / -2;
@@ -766,6 +821,18 @@ class App {
         
         // Update renderer size
         this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+
+        // Update positions of all models in the interactive group
+        if (this.interactiveGroup) {
+            this.interactiveGroup.children.forEach(model => {
+                if (model.userData.originalPosition) {
+                    // If we're not zoomed in on this model, restore its original position
+                    if (!this.isZoomed || this.zoomedModel !== model) {
+                        model.position.copy(model.userData.originalPosition);
+                    }
+                }
+            });
+        }
     }
 
     animate() {
@@ -855,45 +922,8 @@ class App {
     
     // Update object highlighting
     updateHighlighting(hoveredObject) {
-        // Reset all object materials to their original state
-        this.scene.traverse((object) => {
-            if (object.userData && object.userData.isHighlighted) {
-                // Get all meshes in the object and its children
-                object.traverse((child) => {
-                    if (child.isMesh && child.userData.originalMaterial) {
-                        // Restore original material
-                        child.material = child.userData.originalMaterial;
-                        delete child.userData.originalMaterial;
-                    }
-                });
-                
-                object.userData.isHighlighted = false;
-            }
-        });
-        
-        // Apply highlighting to the hovered object
-        if (hoveredObject) {
-            hoveredObject.userData.isHighlighted = true;
-            
-            // Get all meshes in the object and its children
-            hoveredObject.traverse((child) => {
-                if (child.isMesh) {
-                    // Store original material if not already stored
-                    if (!child.userData.originalMaterial) {
-                        child.userData.originalMaterial = child.material;
-                        
-                        // Create a clone of the material
-                        const highlightMaterial = child.material.clone();
-                        
-                        // Apply highlight effect (subtle emissive glow)
-                        highlightMaterial.emissive = new THREE.Color(0x333333);
-                        
-                        // Apply the highlight material
-                        child.material = highlightMaterial;
-                    }
-                }
-            });
-        }
+        // Disabled highlighting effect
+        return;
     }
 
     // Handle click events
@@ -942,7 +972,8 @@ class App {
             if (model.name === 'Ventilator Tube' || model.name === 'HEPA Filter Attachment' || 
                 model.name === 'Halyard Attachment Tube' || model.name === 'Pulse Oximeter' ||
                 model.name === 'Glbeck Humid Vent' || model.name === 'Oxygen Regulator' ||
-                model.name === 'Test Lung' || model.name === 'Green Oxygen Hose') {
+                model.name === 'Test Lung' || model.name === 'Green Oxygen Hose' ||
+                model.name === '731 Power Adapter') {
                 console.log(model.name + ' clicked. Zoom state:', this.isZoomed);
                 if (this.isZoomed && this.zoomedModel === model) { // Only zoom out if it's the currently zoomed model
                     this.zoomOut();
@@ -1002,7 +1033,7 @@ class App {
         const targetPosition = new THREE.Vector3(0, 0, 5); // Center screen target
         
         // Determine target scale (increased for better visibility when zoomed)
-        const targetScale = model.userData.originalScale.clone().multiplyScalar(2.5); // Increased from 1.75
+        const targetScale = model.userData.originalScale.clone().multiplyScalar(1.875); // Reduced by 25% from 2.5
         
         // Use GSAP to animate ONLY the tube's position and scale
         gsap.to(model.position, {
@@ -1308,6 +1339,35 @@ class App {
                 model.position.x -= offset;
             });
         }
+    }
+
+    loadModel(modelPath, callback) {
+        const loader = new THREE.GLTFLoader();
+        loader.load(modelPath, (gltf) => {
+            const model = gltf.scene;
+            
+            // Apply physical materials for better HDR interaction
+            model.traverse((child) => {
+                if (child.isMesh) {
+                    // Create new physical material while preserving textures
+                    const oldMaterial = child.material;
+                    child.material = new THREE.MeshPhysicalMaterial({
+                        map: oldMaterial.map,
+                        normalMap: oldMaterial.normalMap,
+                        roughnessMap: oldMaterial.roughnessMap,
+                        metalnessMap: oldMaterial.metalnessMap,
+                        metalness: 0.0,
+                        roughness: 0.5,
+                        envMapIntensity: 1.0
+                    });
+                    
+                    // Clean up old material
+                    oldMaterial.dispose();
+                }
+            });
+
+            if (callback) callback(model);
+        });
     }
 }
 
