@@ -111,6 +111,14 @@ class App {
         // this.ambientDimFactor = 0.2; // Default dim factor for ambient light
         // this.directionalDimFactor = 0.1; // Default dim factor for directional light
         // --- End light dimming factors ---
+
+        // Add navigation state
+        this.navigableModels = [];
+        this.currentModelIndex = -1;
+
+        // Add navigation event listeners
+        document.getElementById('prev-model').addEventListener('click', () => this.navigateModels('prev'));
+        document.getElementById('next-model').addEventListener('click', () => this.navigateModels('next'));
     }
 
     setupLights() {
@@ -393,15 +401,30 @@ class App {
                 // --- Apply scale and position to the GROUP --- 
                 halyardGroup.scale.setScalar(20.0); // Original scale
                 halyardGroup.position.set(7, 3, 0); // Move to x=7
+                halyardGroup.rotation.x = Math.PI / 4; // Tilt forward 45 degrees
+                halyardGroup.rotation.y = Math.PI / 4; // Rotate 45 degrees on Y axis
+
+                // Ensure visibility of all meshes in the group
+                halyardGroup.traverse((child) => {
+                    if (child.isMesh) {
+                        child.visible = true;
+                        // If the material is transparent, make it more visible
+                        if (child.material) {
+                            child.material.transparent = false;
+                            child.material.opacity = 1.0;
+                        }
+                    }
+                });
 
                 // --- Assign userData to the GROUP --- 
                 halyardGroup.name = 'Halyard Attachment Tube';
                 halyardGroup.userData.tooltipText = 'Halyard attachment tube for ventilation';
+                halyardGroup.visible = true; // Ensure group visibility
 
-                // Save original transform data for the GROUP
+                // Save original transform data for the GROUP - AFTER setting initial transforms
                 halyardGroup.userData.originalPosition = halyardGroup.position.clone();
                 halyardGroup.userData.originalScale = halyardGroup.scale.clone();
-                halyardGroup.userData.originalRotation = halyardGroup.rotation.clone(); // Use group's initial rotation
+                halyardGroup.userData.originalRotation = halyardGroup.rotation.clone();
                 
                 // Create bounding box for the GROUP (let's use cyan)
                 this.createBoundingBox(halyardGroup, 0x00ffff); 
@@ -933,7 +956,6 @@ class App {
             console.log("Models not ready yet, ignoring click.");
             return;
         }
-        // --- End check ---
 
         // Ignore clicks originating from within the side panel
         if (this.sidePanel && this.sidePanel.contains(event.target)) {
@@ -952,52 +974,82 @@ class App {
         // Find intersections ONLY WITHIN THE INTERACTIVE GROUP
         const intersects = this.raycaster.intersectObjects(this.interactiveGroup.children, true);
         
-        // Debugging: Log intersected objects
-        console.log('Intersected objects:', intersects.map(intersect => intersect.object.name));
+        // If we're zoomed in, check for clicks in the general area of the zoomed model
+        if (this.isZoomed && this.zoomedModel) {
+            const modelPos = new THREE.Vector3();
+            this.zoomedModel.getWorldPosition(modelPos);
+            modelPos.project(this.camera);
+            
+            const screenX = (modelPos.x + 1) * this.container.clientWidth / 2;
+            const screenY = (-modelPos.y + 1) * this.container.clientHeight / 2;
+            
+            const clickX = event.clientX - rect.left;
+            const clickY = event.clientY - rect.top;
+            const distance = Math.sqrt(Math.pow(clickX - screenX, 2) + Math.pow(clickY - screenY, 2));
+            
+            if (distance < 150) {  // 150 pixel radius for click detection
+                this.zoomOut();
+                return;
+            }
+        }
 
+        // For unzoomed state, check for clicks near any model
+        if (!this.isZoomed && this.interactiveGroup.children.length > 0) {
+            // Find the closest model to the click
+            let closestDistance = Infinity;
+            let closestModel = null;
+
+            this.interactiveGroup.children.forEach(model => {
+                const modelPos = new THREE.Vector3();
+                model.getWorldPosition(modelPos);
+                modelPos.project(this.camera);
+                
+                const screenX = (modelPos.x + 1) * this.container.clientWidth / 2;
+                const screenY = (-modelPos.y + 1) * this.container.clientHeight / 2;
+                
+                const clickX = event.clientX - rect.left;
+                const clickY = event.clientY - rect.top;
+                const distance = Math.sqrt(Math.pow(clickX - screenX, 2) + Math.pow(clickY - screenY, 2));
+                
+                if (distance < 150 && distance < closestDistance) {  // 150 pixel radius for click detection
+                    closestDistance = distance;
+                    closestModel = model;
+                }
+            });
+
+            if (closestModel) {
+                this.zoomIn(closestModel);
+                setTimeout(() => { this.showSidePanel(closestModel); }, 300);
+                return;
+            }
+        }
+
+        // If no model was found within range, proceed with regular raycasting
         if (intersects.length > 0) {
             const object = intersects[0].object;
-            
             let model = object;
-            // Stop climbing when the parent is the interactiveGroup
-            while (model && model.parent !== this.interactiveGroup && model.parent !== this.scene) { 
+            
+            while (model && model.parent && model.parent !== this.interactiveGroup && model.parent !== this.scene) {
                 model = model.parent;
             }
             
-            if (!model || model === this.interactiveGroup) return; // Skip if we didn't find a model or ended up at the group itself
+            if (!model || model === this.interactiveGroup) {
+                console.log('No valid model found');
+                return;
+            }
             
-            console.log('Clicked model:', model.name, model); 
-            
-            // Check if the clicked model is the Tube, HEPA Filter, Halyard Attachment Tube, or PulseOx
             if (model.name === 'Ventilator Tube' || model.name === 'HEPA Filter Attachment' || 
                 model.name === 'Halyard Attachment Tube' || model.name === 'Pulse Oximeter' ||
                 model.name === 'Glbeck Humid Vent' || model.name === 'Oxygen Regulator' ||
                 model.name === 'Test Lung' || model.name === 'Green Oxygen Hose' ||
                 model.name === '731 Power Adapter') {
-                console.log(model.name + ' clicked. Zoom state:', this.isZoomed);
-                if (this.isZoomed && this.zoomedModel === model) { // Only zoom out if it's the currently zoomed model
-                    this.zoomOut();
-                } else if (!this.isZoomed) { // Only zoom in if nothing is currently zoomed
+                if (!this.isZoomed) {
                     this.zoomIn(model);
-                }
-                // Always show side panel, maybe after a delay if zooming in
-                if (!this.isZoomed || (this.isZoomed && this.zoomedModel !== model)) {
-                     // If zooming in or clicking a different model while zoomed, show panel after delay
-                    setTimeout(() => { this.showSidePanel(model); }, 300); 
-                } else {
-                     // If zooming out, show panel immediately (or handle closing elsewhere)
-                     this.showSidePanel(model);
+                    setTimeout(() => { this.showSidePanel(model); }, 300);
                 }
             } else {
-                console.log('Other model clicked:', model.name);
-                // If something else is zoomed, zoom out first
-                if (this.isZoomed) {
-                    this.zoomOut();
-                }
-                this.showSidePanel(model); // Show panel for non-zoomable models
+                this.showSidePanel(model);
             }
-        } else {
-             console.log('Clicked on empty space');
         }
     }
     
@@ -1115,6 +1167,7 @@ class App {
                 // Reset zoom state
                 this.isZoomed = false;
                 this.zoomedModel = null;
+                this.currentModelIndex = -1;  // Reset the index when manually zooming out
 
                 // Close side panel if no model is zoomed in
                 if (!this.isZoomed) {
@@ -1306,8 +1359,8 @@ class App {
             const object = sideIntersects[0].object;
             
             let model = object;
-            // Stop climbing when the parent is the interactiveGroup
-            while (model && model.parent !== this.interactiveGroup && model.parent !== this.scene) {
+            // Traverse up until we find a direct child of interactiveGroup or scene
+            while (model && model.parent && model.parent !== this.interactiveGroup && model.parent !== this.scene) {
                 model = model.parent;
             }
             
@@ -1368,6 +1421,136 @@ class App {
 
             if (callback) callback(model);
         });
+    }
+
+    // Add after loadModels() method
+    initializeNavigableModels() {
+        // Filter out the ventilator
+        const allModels = this.interactiveGroup.children
+            .filter(model => model.name !== 'Ventilator Unit');
+            
+        // Define the desired order of models
+        const modelOrder = [
+            'Ventilator Tube',
+            'HEPA Filter Attachment',
+            'Halyard Attachment Tube',
+            'Pulse Oximeter',
+            'Glbeck Humid Vent',
+            'Oxygen Regulator',
+            'Test Lung',
+            'Green Oxygen Hose',
+            '731 Power Adapter'
+        ];
+
+        // Sort models according to the defined order
+        this.navigableModels = modelOrder
+            .map(name => allModels.find(model => model.name === name))
+            .filter(model => model !== undefined); // Remove any undefined entries
+            
+        console.log("Navigation order:", this.navigableModels.map(m => m.name));
+    }
+
+    navigateModels(direction) {
+        if (!this.navigableModels.length) {
+            this.initializeNavigableModels();
+        }
+
+        if (this.navigableModels.length === 0) return;
+
+        // If no model is currently selected, find the clicked model's index
+        if (this.currentModelIndex === -1 && this.zoomedModel) {
+            this.currentModelIndex = this.navigableModels.findIndex(model => model.name === this.zoomedModel.name);
+        }
+
+        // Calculate next index
+        let nextIndex;
+        if (this.currentModelIndex === -1) {
+            // If still no index, start at beginning or end based on direction
+            nextIndex = direction === 'next' ? 0 : this.navigableModels.length - 1;
+        } else {
+            if (direction === 'next') {
+                nextIndex = (this.currentModelIndex + 1) % this.navigableModels.length;
+            } else {
+                nextIndex = (this.currentModelIndex - 1 + this.navigableModels.length) % this.navigableModels.length;
+            }
+        }
+
+        const nextModel = this.navigableModels[nextIndex];
+
+        // Rest of the navigation code remains the same
+        if (this.isZoomed && this.zoomedModel) {
+            const currentModel = this.zoomedModel;
+            
+            // First, animate current model back to its original position
+            const origPos = currentModel.userData.originalPosition;
+            const origScale = currentModel.userData.originalScale;
+            const origRot = currentModel.userData.originalRotation;
+
+            // Stop rotation
+            this.isRotating = false;
+
+            // Store next model info for the callback
+            const targetPosition = new THREE.Vector3(0, 0, 5);
+            const targetScale = nextModel.userData.originalScale.clone().multiplyScalar(1.875);
+
+            // Animate current model back
+            gsap.to(currentModel.position, {
+                x: origPos.x,
+                y: origPos.y,
+                z: origPos.z,
+                duration: 0.5,
+                ease: "power2.inOut"
+            });
+
+            gsap.to(currentModel.scale, {
+                x: origScale.x,
+                y: origScale.y,
+                z: origScale.z,
+                duration: 0.5,
+                ease: "power2.inOut"
+            });
+
+            gsap.to(currentModel.rotation, {
+                x: origRot.x,
+                y: origRot.y,
+                z: origRot.z,
+                duration: 0.5,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    // After current model is back, zoom in next model
+                    this.currentModelIndex = nextIndex;
+                    this.zoomedModel = nextModel;
+                    
+                    // Animate next model to center
+                    gsap.to(nextModel.position, {
+                        x: targetPosition.x,
+                        y: targetPosition.y,
+                        z: targetPosition.z,
+                        duration: 0.5,
+                        ease: "power2.inOut",
+                        onComplete: () => {
+                            this.isRotating = true;
+                        }
+                    });
+
+                    gsap.to(nextModel.scale, {
+                        x: targetScale.x,
+                        y: targetScale.y,
+                        z: targetScale.z,
+                        duration: 0.5,
+                        ease: "power2.inOut"
+                    });
+
+                    // Update side panel with next model's info
+                    this.updateSidePanelInfo(nextModel);
+                }
+            });
+        } else {
+            // If not zoomed in, just zoom into the new model
+            this.currentModelIndex = nextIndex;
+            this.zoomIn(nextModel);
+            this.updateSidePanelInfo(nextModel);
+        }
     }
 }
 

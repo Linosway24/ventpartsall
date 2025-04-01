@@ -5,6 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Ventilator Parts</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        .nav-arrow {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 15px 25px;
+            cursor: pointer;
+            border: none;
+            font-size: 24px;
+            border-radius: 5px;
+            transition: background 0.3s;
+            margin: 10px;
+        }
+        .nav-arrow:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+        .nav-controls {
+            display: flex;
+            justify-content: center;
+            padding: 20px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
     <div id="scene-container"></div>
@@ -16,6 +39,10 @@
         </div>
         <div class="panel-content">
             <div id="part-details">Select a part to view details</div>
+            <div class="nav-controls">
+                <button id="prev-model" class="nav-arrow">←</button>
+                <button id="next-model" class="nav-arrow">→</button>
+            </div>
         </div>
     </div>
     <script src="libs/three.min.js"></script>
