@@ -37,6 +37,8 @@ class App {
         this.showBoundingBoxes = true;
         this.interactiveGroup = new THREE.Group(); // Define group before listeners
         this.scene.add(this.interactiveGroup);
+        // Add map to store original material opacity and transparency states
+        this.originalMaterialStates = new Map();
         // --- End early definitions ---
 
         this.setupLights();
@@ -394,14 +396,20 @@ class App {
                 halyardGroup.scale.setScalar(20.0); // Original scale
                 halyardGroup.position.set(7, 3, 0); // Move to x=7
 
+                // --- Set Initial Rotation ---
+                halyardGroup.rotation.y = Math.PI/2 + Math.PI/4; // Keep existing Y rotation
+                halyardGroup.rotation.x = -Math.PI / 4; // Add -45 degree rotation on X-axis
+                // halyardGroup.rotation.z = 0; // Ensure Z rotation is 0 if needed
+                // --- End Initial Rotation ---
+
                 // --- Assign userData to the GROUP --- 
                 halyardGroup.name = 'Halyard Attachment Tube';
                 halyardGroup.userData.tooltipText = 'Halyard attachment tube for ventilation';
 
-                // Save original transform data for the GROUP
+                // Save original transform data for the GROUP (reflecting new rotation)
                 halyardGroup.userData.originalPosition = halyardGroup.position.clone();
                 halyardGroup.userData.originalScale = halyardGroup.scale.clone();
-                halyardGroup.userData.originalRotation = halyardGroup.rotation.clone(); // Use group's initial rotation
+                halyardGroup.userData.originalRotation = halyardGroup.rotation.clone(); 
                 
                 // Create bounding box for the GROUP (let's use cyan)
                 this.createBoundingBox(halyardGroup, 0x00ffff); 
@@ -952,52 +960,78 @@ class App {
         // Find intersections ONLY WITHIN THE INTERACTIVE GROUP
         const intersects = this.raycaster.intersectObjects(this.interactiveGroup.children, true);
         
-        // Debugging: Log intersected objects
-        console.log('Intersected objects:', intersects.map(intersect => intersect.object.name));
-
         if (intersects.length > 0) {
             const object = intersects[0].object;
-            
             let model = object;
-            // Stop climbing when the parent is the interactiveGroup
+            // Find the top-level group in the interactiveGroup
             while (model && model.parent !== this.interactiveGroup && model.parent !== this.scene) { 
                 model = model.parent;
             }
             
-            if (!model || model === this.interactiveGroup) return; // Skip if we didn't find a model or ended up at the group itself
-            
+            if (!model || model === this.interactiveGroup) return; // Skip if we didn't find a valid model
+
             console.log('Clicked model:', model.name, model); 
-            
-            // Check if the clicked model is the Tube, HEPA Filter, Halyard Attachment Tube, or PulseOx
-            if (model.name === 'Ventilator Tube' || model.name === 'HEPA Filter Attachment' || 
-                model.name === 'Halyard Attachment Tube' || model.name === 'Pulse Oximeter' ||
-                model.name === 'Glbeck Humid Vent' || model.name === 'Oxygen Regulator' ||
-                model.name === 'Test Lung' || model.name === 'Green Oxygen Hose' ||
-                model.name === '731 Power Adapter') {
-                console.log(model.name + ' clicked. Zoom state:', this.isZoomed);
-                if (this.isZoomed && this.zoomedModel === model) { // Only zoom out if it's the currently zoomed model
-                    this.zoomOut();
-                } else if (!this.isZoomed) { // Only zoom in if nothing is currently zoomed
-                    this.zoomIn(model);
-                }
-                // Always show side panel, maybe after a delay if zooming in
-                if (!this.isZoomed || (this.isZoomed && this.zoomedModel !== model)) {
-                     // If zooming in or clicking a different model while zoomed, show panel after delay
-                    setTimeout(() => { this.showSidePanel(model); }, 300); 
-                } else {
-                     // If zooming out, show panel immediately (or handle closing elsewhere)
-                     this.showSidePanel(model);
+
+            const isZoomable = [
+                'Ventilator Tube', 'HEPA Filter Attachment', 'Halyard Attachment Tube', 
+                'Pulse Oximeter', 'Glbeck Humid Vent', 'Oxygen Regulator', 
+                'Test Lung', 'Green Oxygen Hose', '731 Power Adapter'
+            ].includes(model.name);
+
+            if (this.isZoomed) {
+                // --- CASE 1: Clicked the CURRENTLY zoomed model ---
+                if (this.zoomedModel === model) {
+                    console.log(model.name + ' (already zoomed) clicked. Zooming out.');
+                    this.zoomOut(); // No callback needed, default is to close panel
+                } 
+                // --- CASE 2: Clicked a DIFFERENT ZOOMABLE model ---
+                else if (isZoomable) { 
+                    console.log(model.name + ' (zoomable) clicked while another is zoomed. Switching zoom.');
+                    this.zoomOut(() => { // Callback to zoom into the new model
+                        console.log("Zoom out finished, zooming into:", model.name);
+                        this.zoomIn(model);
+                        this.showSidePanel(model); // Show panel for the new model
+                    });
+                } 
+                // --- CASE 3: Clicked a NON-ZOOMABLE model ---
+                else { 
+                    console.log(model.name + ' (non-zoomable) clicked while zoomed. Zooming out and showing panel.');
+                    this.zoomOut(() => { // Callback to show panel for the non-zoomable model
+                        console.log("Zoom out finished, showing side panel for:", model.name);
+                        this.showSidePanel(model);
+                    });
                 }
             } else {
-                console.log('Other model clicked:', model.name);
-                // If something else is zoomed, zoom out first
-                if (this.isZoomed) {
-                    this.zoomOut();
+                // --- CASE 4: Nothing is zoomed ---
+                if (isZoomable) {
+                    console.log(model.name + ' (zoomable) clicked. Zooming in.');
+                    // --- Add Logging Before Zoom --- 
+                    if (model.name === 'Ventilator Tube') {
+                        console.log('--- Ventilator Tube Pre-Zoom State ---');
+                        console.log('Position:', model.position.clone());
+                        console.log('Scale:', model.scale.clone());
+                        console.log('Rotation:', model.rotation.clone());
+                        console.log('Camera Top/Bottom:', this.camera.top, this.camera.bottom);
+                        console.log('------------------------------------');
+                    }
+                    // --- End Logging ---
+                    this.zoomIn(model);
+                    // Delay panel slightly to match zoom animation
+                    setTimeout(() => { this.showSidePanel(model); }, 300); 
+                } else {
+                    console.log(model.name + ' (non-zoomable) clicked. Showing panel.');
+                    this.showSidePanel(model); // Show panel immediately
                 }
-                this.showSidePanel(model); // Show panel for non-zoomable models
             }
         } else {
-             console.log('Clicked on empty space');
+             // --- CASE 5: Clicked on empty space ---
+             console.log('Clicked on empty space.');
+             if (this.isZoomed) {
+                 console.log("Zoomed in, zooming out due to empty space click.");
+                 this.zoomOut(); // Zoom out if clicked empty space while zoomed
+             } else {
+                 this.closeSidePanel(); // Close panel if open and clicked empty space
+             }
         }
     }
     
@@ -1010,82 +1044,112 @@ class App {
         this.hideTooltip();
         this.boundingBoxes.forEach(box => { if (box) box.visible = false; });
 
-        // --- Animate background dimming --- 
-        // Removed background animation
+        // Fade out other objects
+        this.fadeOutOtherObjects(model); // Default duration is 0.5s
 
-        // --- Hide other objects ---
-        // Removed hiding logic
+        let targetScaleVector;
+        let targetPosition = new THREE.Vector3(0, 0, 5); // Default target position
 
-        // --- Dim Lights (Existing) --- 
-        // Removed light dimming animations
-        /*
-        if (this.ambientLight && this.mainLight) {
-            // ... removed code ...
+        // --- Special Case: Tube, HEPA, Halyard, Pulse Ox, Glbeck, O2 Reg, Test Lung, Green Hose, Power Adapter - Scale x1.5 ONLY ---
+        if (model.name === 'Ventilator Tube' || model.name === 'HEPA Filter Attachment' || model.name === 'Halyard Attachment Tube' || model.name === 'Pulse Oximeter' || model.name === 'Glbeck Humid Vent' || model.name === 'Oxygen Regulator' || model.name === 'Test Lung' || model.name === 'Green Oxygen Hose' || model.name === '731 Power Adapter') {
+            console.log(`Applying fixed scale x1.5 and adjusted position for ${model.name}.`);
+            
+            // --- Calculate final scale vector: Multiply current scale by 1.5 ---
+            targetScaleVector = model.scale.clone().multiplyScalar(1.5); 
+            console.log(`Target Scale Vector (current * 1.5) for ${model.name}:`, targetScaleVector);
+            // --- End Scale Calculation ---
+
+            // Adjust target position - Y=0 
+            targetPosition.set(0, 0, 5); // Vertically centered
+        
+        } else {
+            // --- Auto-Detect Scaling for all other models ---
+            console.log(`Applying auto-detect scaling for: ${model.name}`);
+            const viewHeight = this.camera.top - this.camera.bottom;
+            const viewWidth = this.camera.right - this.camera.left;
+            const targetSize = Math.min(viewHeight, viewWidth) * 0.8; // Target 80%
+
+            let modelSize;
+            const currentGroupScale = model.scale.clone();
+            const groupScaleMatrix = new THREE.Matrix4().scale(currentGroupScale);
+
+            // Method 1: Size of whole group
+            const boxGroup = new THREE.Box3().setFromObject(model); 
+            const modelSizeGroup = boxGroup.getSize(new THREE.Vector3());
+
+            // Method 2: Combined size of visible meshes
+            const boxVisible = new THREE.Box3();
+            let visibleMeshFound = false;
+            model.traverse((child) => {
+                if (child.isMesh && child.visible && !(child.material && child.material.visible === false)) {
+                    const meshBoxLocal = new THREE.Box3().setFromObject(child);
+                    child.updateWorldMatrix(true, false);
+                    const meshWorldMatrix = child.matrixWorld.clone();
+                    const groupWorldMatrixInv = model.matrixWorld.clone().invert(); 
+                    meshWorldMatrix.premultiply(groupWorldMatrixInv);
+                    meshBoxLocal.applyMatrix4(meshWorldMatrix);
+                    boxVisible.union(meshBoxLocal);
+                    visibleMeshFound = true;
+                }
+            });
+            boxVisible.applyMatrix4(groupScaleMatrix); 
+            const modelSizeVisible = visibleMeshFound ? boxVisible.getSize(new THREE.Vector3()) : modelSizeGroup;
+
+            // Compare and decide which size to use
+            const sizeThresholdFactor = 1.5;
+            if (visibleMeshFound && modelSizeGroup.length() > modelSizeVisible.length() * sizeThresholdFactor) {
+                modelSize = modelSizeVisible;
+            } else {
+                modelSize = modelSizeGroup;
+            }
+
+            // Calculate scale factors (common logic)
+            const scaleFactorX = modelSize.x > 0.001 ? targetSize / modelSize.x : 1;
+            const scaleFactorY = modelSize.y > 0.001 ? targetSize / modelSize.y : 1;
+            const requiredScaleFactor = Math.min(scaleFactorX, scaleFactorY);
+
+            // Calculate final target scale vector
+            targetScaleVector = model.scale.clone().multiplyScalar(requiredScaleFactor);
+            // --- End Auto-Detect Scaling ---
         }
-        */
-        // --- End Dim Lights ---
         
-        // --- Activate Spotlight ---
-        // Removed spotlight activation
-        // --- End Activate Spotlight ---
-        
-        // Determine target position (center of screen, slightly forward)
-        const targetPosition = new THREE.Vector3(0, 0, 5); // Center screen target
-        
-        // Determine target scale (increased for better visibility when zoomed)
-        const targetScale = model.userData.originalScale.clone().multiplyScalar(1.875); // Reduced by 25% from 2.5
-        
-        // Use GSAP to animate ONLY the tube's position and scale
+        // --- Apply Animations (Common to all models) ---
         gsap.to(model.position, {
             x: targetPosition.x,
-            y: targetPosition.y,
+            y: targetPosition.y, // Use the potentially adjusted Y
             z: targetPosition.z,
             duration: 1,
             ease: "power2.inOut",
             onComplete: () => {
-                this.isRotating = true;
+                this.isRotating = true; // Allow rotation after zoom completes
             }
         });
         
+        // --- Animate Scale for ALL models again ---
         gsap.to(model.scale, {
-            x: targetScale.x,
-            y: targetScale.y,
-            z: targetScale.z,
+            x: targetScaleVector.x,
+            y: targetScaleVector.y,
+            z: targetScaleVector.z,
             duration: 1,
             ease: "power2.inOut"
         });
     }
     
     // Restore original view
-    zoomOut() {
+    zoomOut(onCompleteCallback = null) {
         if (!this.isZoomed || !this.zoomedModel) return;
         
         const model = this.zoomedModel;
         this.isRotating = false;
-        
-        // --- Restore background color ---
-        // Removed background animation
 
-        // --- Restore other objects ---
-        // Removed object restoration logic
-
-        // --- Restore Lights (Existing) --- 
-        // Removed light restoration animations
-        /*
-        if (this.ambientLight && this.mainLight) {
-            // ... removed code ... 
-        }
-        */
-        // --- End Restore Lights ---
-        
-        // --- Deactivate Spotlight ---
-        // Removed spotlight deactivation
-        // --- End Deactivate Spotlight ---
+        // Fade in all objects
+        this.fadeInAllObjects(); // Default duration is 0.5s
         
         // Get original transform values
         const origPos = model.userData.originalPosition;
         const origScale = model.userData.originalScale;
         const origRot = model.userData.originalRotation;
+        console.log(`[ZoomOut] Restoring ${model.name} to Original Rotation:`, origRot); // Log original rotation
         
         // Use GSAP to animate back to original transform
         gsap.to(model.position, {
@@ -1112,22 +1176,27 @@ class App {
             duration: 1,
             ease: "power2.inOut",
             onComplete: () => {
-                // Reset zoom state
+                // Reset zoom state first
+                const previouslyZoomedModel = this.zoomedModel; // Keep ref if needed
                 this.isZoomed = false;
                 this.zoomedModel = null;
 
-                // Close side panel if no model is zoomed in
-                if (!this.isZoomed) {
-                    this.closeSidePanel();
-                }
-
-                // Restore bounding box visibility
+                // Restore bounding box visibility 
                 if (this.showBoundingBoxes) {
                     this.boundingBoxes.forEach(box => {
                         if (box) {
                             box.visible = true;
                         }
                     });
+                }
+
+                // Execute the callback if provided, otherwise close the panel
+                if (onCompleteCallback && typeof onCompleteCallback === 'function') {
+                    console.log("Zoom out complete, executing callback.");
+                    onCompleteCallback();
+                } else {
+                    console.log("Zoom out complete, closing side panel by default.");
+                    this.closeSidePanel();
                 }
             }
         });
@@ -1165,6 +1234,19 @@ class App {
         closeButton.id = 'close-panel';
         closeButton.innerHTML = '&times;';
         console.log("Created close button element:", closeButton);
+
+        // --- ATTACH LISTENER HERE ---
+        closeButton.addEventListener('click', (e) => {
+            console.log("Close button clicked (listener attached in createSidePanel)");
+            e.stopPropagation(); // Prevent click from bubbling to container
+            if (this.isZoomed && this.zoomedModel) {
+                console.log("Zoomed model detected, calling zoomOut()...");
+                this.zoomOut();
+            }
+            console.log("Calling closeSidePanel()...");
+            this.closeSidePanel();
+        });
+        // --- END LISTENER ATTACHMENT ---
         
         // Create panel content
         const panelContent = document.createElement('div');
@@ -1238,23 +1320,10 @@ class App {
             panel.classList.add('open');
             this.sidePanelOpen = true;
             
-            // --- ADD LISTENER LOGIC HERE ---
-            const closeButton = panel.querySelector('#close-panel');
-            if (closeButton && !closeButton.dataset.listenerAttached) {
-                console.log("Attaching listener to close button inside showSidePanel");
-                closeButton.addEventListener('click', (e) => {
-                    console.log("Close button clicked (listener attached in showSidePanel)");
-                    e.stopPropagation();
-                    if (this.isZoomed && this.zoomedModel) {
-                        console.log("Zoomed model detected, calling zoomOut()...");
-                        this.zoomOut();
-                    }
-                    console.log("Calling closeSidePanel()...");
-                    this.closeSidePanel();
-                });
-                closeButton.dataset.listenerAttached = 'true'; // Mark listener as attached
-            }
-             // --- END LISTENER LOGIC ---
+            // --- REMOVED LISTENER LOGIC FROM HERE ---
+            // const closeButton = panel.querySelector('#close-panel');
+            // if (closeButton && !closeButton.dataset.listenerAttached) { ... }
+            // --- END REMOVED LISTENER LOGIC ---
              
         } else {
             console.error('Side panel elements not found!');
@@ -1318,10 +1387,6 @@ class App {
         }
     }
 
-    // --- Helper functions for dimming/restoring materials ---
-    // Removed helper functions dimObjectMaterials and restoreObjectMaterials
-    // --- End Helper functions ---
-
     toggleGUIVisibility() {
         const guiElement = this.gui.domElement;
         const offset = 5; // Offset amount when GUI is shown
@@ -1369,6 +1434,76 @@ class App {
             if (callback) callback(model);
         });
     }
+
+    // --- REPLACED HELPER FUNCTIONS ---
+
+    // Function to hide all objects except the selected one
+    hideOtherObjects(selectedObject) {
+        this.interactiveGroup.children.forEach(object => {
+            if (object !== selectedObject && object.isGroup) { // Check if it's one of our interactive groups
+                object.visible = false;
+            }
+        });
+    }
+
+    // Function to make all interactive objects visible
+    showAllObjects() {
+        this.interactiveGroup.children.forEach(object => {
+            if (object.isGroup) { // Check if it's one of our interactive groups
+                 object.visible = true;
+            }
+        });
+    }
+
+    // --- END REPLACED HELPER FUNCTIONS ---
+
+    // --- UPDATED HELPER FUNCTIONS for fading ---
+
+    fadeOutOtherObjects(selectedObject, duration = 0.5) {
+        this.fadeInAllObjects(0); // Instantly restore any previously faded objects before starting new fade
+
+        this.interactiveGroup.children.forEach(object => {
+            if (object !== selectedObject && object.isGroup) { // Check interactive groups
+                object.traverse((child) => {
+                    if (child.isMesh && child.material) {
+                        const materials = Array.isArray(child.material) ? child.material : [child.material];
+                        materials.forEach(material => {
+                            if (!this.originalMaterialStates.has(material)) {
+                                // Store original state
+                                this.originalMaterialStates.set(material, {
+                                    originalOpacity: material.opacity,
+                                    originalTransparent: material.transparent
+                                });
+                            }
+                            // Make transparent and animate opacity to 0
+                            material.transparent = true;
+                            gsap.to(material, { opacity: 0.0, duration: duration, ease: "power1.inOut" });
+                        });
+                    }
+                });
+            }
+        });
+    }
+
+    fadeInAllObjects(duration = 0.5) {
+        this.originalMaterialStates.forEach((state, material) => {
+            // Animate opacity back to original
+            gsap.to(material, {
+                opacity: state.originalOpacity,
+                duration: duration,
+                ease: "power1.inOut",
+                onComplete: () => {
+                    // Restore original transparency state ONLY if opacity is back to normal (or target is > 0)
+                    if (state.originalOpacity > 0) { 
+                       material.transparent = state.originalTransparent;
+                    }
+                }
+            });
+        });
+        this.originalMaterialStates.clear(); // Clear the map after initiating the restore
+    }
+
+    // --- END UPDATED HELPER FUNCTIONS ---
 }
 
 // Initialize the app when the DOM is ready
