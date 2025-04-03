@@ -46,15 +46,16 @@ html, body {
     top: 0;
     right: -350px;
     width: 350px;
-    height: 100%;
-    background-color: #1c2430;
+    height: 100vh;
+    background: linear-gradient(135deg, #1a2a3a 0%, #2c3e50 100%);
     color: white;
-    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.5);
-    z-index: 200;
-    transition: right 0.3s ease;
+    box-shadow: -5px 0 25px rgba(0,0,0,0.3);
+    z-index: 1000;
+    transition: right 0.3s ease-in-out;
     display: flex;
     flex-direction: column;
-    font-family: Arial, sans-serif;
+    font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow: hidden;
 }
 
 .side-panel.open {
@@ -62,37 +63,65 @@ html, body {
 }
 
 .panel-header {
-    padding: 15px;
-    background-color: #121a24;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #2c3e50;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+    color: white;
+    padding: 20px 30px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
-.panel-header h2 {
-    font-size: 18px;
-    margin: 0;
-    color: #4dabf7;
+.header-title {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+}
+
+.header-subtitle {
+    font-size: 14px;
+    margin-top: 5px;
+    opacity: 0.9;
 }
 
 #close-panel {
-    background: none;
-    border: none;
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255,255,255,0.1);
     color: white;
-    font-size: 24px;
+    border: none;
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
     cursor: pointer;
-    transition: color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 1001;
 }
 
 #close-panel:hover {
-    color: #ff6b6b;
+    transform: scale(1.05);
+    background: rgba(255,255,255,0.25);
+}
+
+#close-panel:not(:hover) {
+    transform: scale(1);
+    background: rgba(255,255,255,0.15);
 }
 
 .panel-content {
-    padding: 20px;
+    margin-top: 90px;
+    padding: 20px 30px;
     overflow-y: auto;
     flex-grow: 1;
+    height: calc(100% - 180px); /* Account for header and nav container */
 }
 
 #part-details {
@@ -118,4 +147,44 @@ html, body {
     z-index: 100;       /* Ensure it stays above the canvas */
     background-color: #2a313b;
     border-radius: 5px;
+}
+
+.nav-container {
+    position: relative;
+    margin: 20px 30px;
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    width: fit-content;
+    margin-left: auto; /* This will push it to the right */
+}
+
+.nav-button {
+    background: rgba(255,255,255,0.15);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.2s ease;
+}
+
+.nav-button:hover {
+    background: rgba(255,255,255,0.25);
+    transform: scale(1.05);
+}
+
+.nav-button:not(:hover) {
+    transform: scale(1);
+    background: rgba(255,255,255,0.15);
 } 

@@ -73,11 +73,24 @@ class App {
         // Start animation loop
         this.animate();
 
-        // Create side panel programmatically (do this early in initialization)
-        this.createSidePanel();
+        // Initialize side panel reference
+        this.sidePanel = document.getElementById('side-panel');
+        this.panelContent = document.getElementById('part-details');
         
         // Add flag to track side panel state
         this.sidePanelOpen = false;
+        
+        // Add click handler for close button
+        const closeButton = document.getElementById('close-panel');
+        if (closeButton) {
+            closeButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (this.isZoomed && this.zoomedModel) {
+                    this.zoomOut();
+                }
+                this.closeSidePanel();
+            });
+        }
 
         // --- Add properties for lights and original intensities --- 
         // Already defined earlier, remove or comment out these redundant lines
@@ -629,60 +642,6 @@ class App {
         return false;
     }
 
-    createSidePanel() {
-        // Create side panel element
-        this.sidePanel = document.createElement('div');
-        this.sidePanel.id = 'side-panel';
-        this.sidePanel.className = 'side-panel';
-        
-        // Create panel header
-        const panelHeader = document.createElement('div');
-        panelHeader.className = 'panel-header';
-        
-        // Create part name heading
-        const partName = document.createElement('h2');
-        partName.id = 'part-name';
-        partName.textContent = 'Part Details';
-        
-        // Create close button
-        const closeButton = document.createElement('button');
-        closeButton.id = 'close-panel';
-        closeButton.innerHTML = '&times;';
-        console.log("Created close button element:", closeButton);
-
-        // --- ATTACH LISTENER HERE ---
-        closeButton.addEventListener('click', (e) => {
-            console.log("Close button clicked (listener attached in createSidePanel)");
-            e.stopPropagation(); // Prevent click from bubbling to container
-            if (this.isZoomed && this.zoomedModel) {
-                console.log("Zoomed model detected, calling zoomOut()...");
-                this.zoomOut();
-            }
-            console.log("Calling closeSidePanel()...");
-            this.closeSidePanel();
-        });
-        // --- END LISTENER ATTACHMENT ---
-
-        // Create panel content
-        const panelContent = document.createElement('div');
-        panelContent.className = 'panel-content';
-        
-        // Create part details container
-        const partDetails = document.createElement('div');
-        partDetails.id = 'part-details';
-        partDetails.textContent = 'Select a part to view details';
-        
-        // Assemble the panel
-        panelHeader.appendChild(partName);
-        panelHeader.appendChild(closeButton);
-        panelContent.appendChild(partDetails);
-        this.sidePanel.appendChild(panelHeader);
-        this.sidePanel.appendChild(panelContent);
-        
-        // Add panel to document
-        document.body.appendChild(this.sidePanel);
-    }
-
     // Completely separate method to update side panel info - doesn't affect other behavior
     updateSidePanelInfo(model) {
         const nameElement = document.getElementById('part-name');
@@ -725,39 +684,55 @@ class App {
 
     // Show side panel with details
     showSidePanel(model) {
-        const panel = document.getElementById('side-panel');
-        const partName = document.getElementById('part-name');
-        const partDetails = document.getElementById('part-details');
+        if (!this.sidePanel || !model) return;
 
-        if (panel && partName && partDetails) {
-            partName.textContent = model.name || 'Selected Part';
-                partDetails.textContent = model.userData.tooltipText || 'No details available.';
-            panel.classList.add('open');
-            this.sidePanelOpen = true;
-            
-            // --- REMOVED LISTENER LOGIC FROM HERE ---
-            // const closeButton = panel.querySelector('#close-panel');
-            // if (closeButton && !closeButton.dataset.listenerAttached) { ... }
-            // --- END REMOVED LISTENER LOGIC ---
-             
-        } else {
-            console.error('Side panel elements not found!');
+        // Update panel content
+        this.updatePanelContent(model);
+
+        // Show panel with animation
+        this.sidePanel.style.display = 'block';
+        requestAnimationFrame(() => {
+            this.sidePanel.classList.add('open');
+        });
+        this.sidePanelOpen = true;
+    }
+
+    updatePanelContent(model) {
+        if (!this.panelContent || !model) return;
+
+        let content = '';
+        
+        // Add model name with custom title for Ventilator Tube
+        const displayName = model.name === 'Ventilator Tube' ? 'Ventilator Circuit' : model.name;
+        content += `<h2 style="margin-bottom: 20px; font-size: 24px;">${displayName}</h2>`;
+        
+        // Add description
+        let description = '';
+        if (model.name === 'Ventilator Tube') {
+            description = `
+                <ul style="margin-bottom: 15px; line-height: 1.5; padding-left: 20px;">
+                    <li>Connects the ventilator to the patient</li>
+                    <li>Delivers oxygen and removes exhaled air</li>
+                    <li>Proper assembly ensures effective ventilation and minimizes air leaks</li>
+                </ul>
+            `;
+        } else if (model.userData && model.userData.tooltipText) {
+            description = model.userData.tooltipText;
         }
+        
+        if (description) {
+            content += description;
+        }
+
+        this.panelContent.innerHTML = content;
     }
 
     // Close side panel
     closeSidePanel() {
-        console.log("Inside closeSidePanel method");
-        const panel = document.getElementById('side-panel');
-        if (panel) {
-            console.log("Panel found. Current classes before removal:", panel.className);
-            panel.classList.remove('open');
-            console.log("Panel classes after removal:", panel.className);
-        } else {
-            console.error("Could not find side panel element!");
-        }
+        if (!this.sidePanel) return;
+        
+        this.sidePanel.classList.remove('open');
         this.sidePanelOpen = false;
-        console.log("Side panel state set to closed.");
     }
 
     // Helper to find the parent model of an intersected object
