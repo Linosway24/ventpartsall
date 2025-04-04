@@ -115,6 +115,34 @@ class App {
         this.allModelsLoaded = false;
         this.paddingFactor = 1.2; // INCREASED padding (was 1.1)
         // --- End bounds properties ---
+
+        // Add current model index tracking
+        this.currentModelIndex = -1;
+        this.modelGroups = [];
+        
+        // Add event listeners for bottom navigation buttons
+        const prevButton = document.getElementById('prevButton');
+        const nextButton = document.getElementById('nextButton');
+        
+        if (prevButton) {
+            console.log('Found previous button in bottom navigation');
+            prevButton.addEventListener('click', (e) => {
+                console.log('Bottom previous button clicked');
+                this.navigateModels(-1);
+            });
+        } else {
+            console.log('Previous button not found in bottom navigation');
+        }
+        
+        if (nextButton) {
+            console.log('Found next button in bottom navigation');
+            nextButton.addEventListener('click', (e) => {
+                console.log('Bottom next button clicked');
+                this.navigateModels(1);
+            });
+        } else {
+            console.log('Next button not found in bottom navigation');
+        }
     }
 
     setupLights() {
@@ -241,6 +269,9 @@ class App {
                     if (config.needsClickableArea) {
                         this.addClickableArea(modelGroup, config);
                     }
+                    
+                    // Store model groups in order for navigation
+                    this.modelGroups.push(modelGroup);
                     
                     console.log(`Processed and added model ${index + 1}/${results.length}: ${config.name}`);
                 });
@@ -689,6 +720,7 @@ class App {
 
     // Show side panel with details
     showSidePanel(model) {
+        console.log('showSidePanel called for model:', model.name);
         if (!this.sidePanel || !model) return;
 
         // Update panel content
@@ -700,6 +732,70 @@ class App {
             this.sidePanel.classList.add('open');
         });
         this.sidePanelOpen = true;
+
+        // Add event listeners for navigation buttons
+        const prevButton = document.getElementById('prevModel');
+        const nextButton = document.getElementById('nextModel');
+
+        console.log('Looking for navigation buttons...');
+        console.log('Previous button found:', prevButton !== null);
+        console.log('Next button found:', nextButton !== null);
+
+        if (prevButton) {
+            console.log('Adding click listener to previous button');
+            prevButton.addEventListener('click', (e) => {
+                console.log('Previous button clicked - event listener');
+                e.preventDefault();
+                e.stopPropagation();
+                
+                console.log('Current model:', model.name);
+                const currentIndex = this.modelGroups.findIndex(m => m === model);
+                const prevIndex = (currentIndex - 1 + this.modelGroups.length) % this.modelGroups.length;
+                const prevModel = this.modelGroups[prevIndex];
+                console.log('Navigating from index', currentIndex, 'to', prevIndex);
+                console.log('Previous model:', prevModel.name);
+                
+                if (this.isZoomed && this.zoomedModel !== prevModel) {
+                    console.log('Zooming out before navigating to previous model');
+                    this.zoomOut(() => {
+                        this.zoomToModel(prevModel);
+                        this.updatePanelContent(prevModel);
+                    });
+                } else {
+                    console.log('Directly navigating to previous model');
+                    this.zoomToModel(prevModel);
+                    this.updatePanelContent(prevModel);
+                }
+            });
+        }
+
+        if (nextButton) {
+            console.log('Adding click listener to next button');
+            nextButton.addEventListener('click', (e) => {
+                console.log('Next button clicked - event listener');
+                e.preventDefault();
+                e.stopPropagation();
+                
+                console.log('Current model:', model.name);
+                const currentIndex = this.modelGroups.findIndex(m => m === model);
+                const nextIndex = (currentIndex + 1) % this.modelGroups.length;
+                const nextModel = this.modelGroups[nextIndex];
+                console.log('Navigating from index', currentIndex, 'to', nextIndex);
+                console.log('Next model:', nextModel.name);
+                
+                if (this.isZoomed && this.zoomedModel !== nextModel) {
+                    console.log('Zooming out before navigating to next model');
+                    this.zoomOut(() => {
+                        this.zoomToModel(nextModel);
+                        this.updatePanelContent(nextModel);
+                    });
+                } else {
+                    console.log('Directly navigating to next model');
+                    this.zoomToModel(nextModel);
+                    this.updatePanelContent(nextModel);
+                }
+            });
+        }
     }
 
     updatePanelContent(model) {
@@ -727,7 +823,7 @@ class App {
         
         // Add description based on model
         let description = '';
-        if (model.name === 'Ventilator Tube') {
+            if (model.name === 'Ventilator Tube') {
             description = `
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                     <div style="
@@ -750,7 +846,7 @@ class App {
                             border-top-left-radius: 8px;
                             border-bottom-left-radius: 8px;
                         "></div>
-                        Connects the ventilator to the patient
+                            Connects the ventilator to the patient
                     </div>
                     <div style="
                         background: rgba(28, 36, 48, 0.9);
@@ -772,7 +868,7 @@ class App {
                             border-top-left-radius: 8px;
                             border-bottom-left-radius: 8px;
                         "></div>
-                        Delivers oxygen and removes exhaled air
+                            Delivers oxygen and removes exhaled air
                     </div>
                     <div style="
                         background: rgba(28, 36, 48, 0.9);
@@ -794,7 +890,7 @@ class App {
                             border-top-left-radius: 8px;
                             border-bottom-left-radius: 8px;
                         "></div>
-                        Proper assembly ensures effective ventilation and minimizes air leaks
+                            Proper assembly ensures effective ventilation and minimizes air leaks
                     </div>
                 </div>
             `;
@@ -868,8 +964,8 @@ class App {
                         Must be replaced according to schedule
                     </div>
                 </div>
-            `;
-        } else if (model.name === 'Pulse Oximeter') {
+                `;
+            } else if (model.name === 'Pulse Oximeter') {
             description = `
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                     <div style="
@@ -939,8 +1035,8 @@ class App {
                         Alerts staff to dangerous changes in vital signs
                     </div>
                 </div>
-            `;
-        } else if (model.name === 'Halyard Attachment Tube') {
+                `;
+            } else if (model.name === 'Halyard Attachment Tube') {
             description = `
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                     <div style="
@@ -1010,8 +1106,8 @@ class App {
                         Ensures airtight seal for reliable ventilation
                     </div>
                 </div>
-            `;
-        } else if (model.name === 'Glbeck Humid Vent') {
+                `;
+            } else if (model.name === 'Glbeck Humid Vent') {
             description = `
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                     <div style="
@@ -1081,8 +1177,8 @@ class App {
                         Reduces risk of airway dryness and irritation
                     </div>
                 </div>
-            `;
-        } else if (model.name === 'Oxygen Regulator') {
+                `;
+            } else if (model.name === 'Oxygen Regulator') {
             description = `
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                     <div style="
@@ -1645,6 +1741,63 @@ class App {
         
         // Copy the userData for interaction
         clickableArea.userData = modelGroup.userData;
+    }
+
+    // Add navigation method
+    navigateModels(direction) {
+        console.log('navigateModels called with direction:', direction);
+        console.log('Current model index:', this.currentModelIndex);
+        console.log('Total models:', this.modelGroups.length);
+        
+        if (this.modelGroups.length === 0) {
+            console.log('No models available for navigation');
+            return;
+        }
+        
+        // Keep finding next index until we get a non-Ventilator Unit model
+        let nextIndex = this.currentModelIndex;
+        do {
+            nextIndex = (nextIndex + direction + this.modelGroups.length) % this.modelGroups.length;
+        } while (this.modelGroups[nextIndex].name === 'Ventilator Unit');
+        
+        this.currentModelIndex = nextIndex;
+        console.log('New model index:', this.currentModelIndex);
+        
+        // Get the model at current index
+        const targetModel = this.modelGroups[this.currentModelIndex];
+        console.log('Target model:', targetModel ? targetModel.name : 'none');
+        
+        // Simulate a click on this model
+        if (targetModel) {
+            // If we're zoomed into a different model, zoom out first
+            if (this.isZoomed && this.zoomedModel !== targetModel) {
+                console.log('Zooming out from current model before navigating');
+                this.zoomOut(() => {
+                    // After zooming out, zoom into new model and update panel
+                    console.log('Zooming into new model:', targetModel.name);
+                    this.zoomIn(targetModel);
+                    this.showSidePanel(targetModel);
+                });
+            } else {
+                // If not zoomed or same model, just zoom and update panel
+                console.log('Directly navigating to new model:', targetModel.name);
+                this.zoomIn(targetModel);
+                this.showSidePanel(targetModel);
+            }
+        }
+    }
+
+    // Add zoomToModel method
+    zoomToModel(model) {
+        if (!model) return;
+        
+        if (!this.isZoomed) {
+            this.zoomIn(model);
+        } else if (this.zoomedModel !== model) {
+            this.zoomOut(() => {
+                this.zoomIn(model);
+            });
+        }
     }
 }
 
