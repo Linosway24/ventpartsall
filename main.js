@@ -171,15 +171,15 @@ class App {
     loadModels() {
         const modelConfigs = [
             { name: 'Ventilator Unit', path: 'assets/ventilator.glb', scale: 1, position: [-15, 0, 0], rotation: [0,0,0], tooltip: 'Main ventilator device providing respiratory support' },
-            { name: 'Ventilator Tube', path: 'assets/VentilatorTube-WhitePlastic.glb', scale: 0.1125, position: [-9, 4, 0], rotation: [0,0,0], tooltip: 'Ventilator Circuit' },
+            { name: 'Ventilator Tube', path: 'assets/VentilatorTube-WhitePlastic.glb', scale: 0.1125, position: [-9, 4, 0], rotation: [0,0,0], tooltip: 'Ventilator Circuit', needsClickableArea: true },
             { name: 'HEPA Filter Attachment', path: 'assets/HeppaAttachment-2025.glb', scale: 0.3, position: [-3, 3, 0], rotation: [0,0,0], tooltip: 'HEPA Filter Attachment' },
-            { name: 'Halyard Attachment Tube', path: 'assets/HalyardAttachmentTube.glb', scale: 20.0, position: [7, 3, 0], rotation: [-Math.PI / 4, Math.PI/2 + Math.PI/4, 0], tooltip: 'Halyard Attachment Tube' },
-            { name: 'Pulse Oximeter', path: 'assets/PulseOx.glb', scale: 0.2, position: [17, 3, 5], rotation: [Math.PI/4, Math.PI/2, 0], tooltip: 'Pulse Oximeter' },
-            { name: 'Glbeck Humid Vent', path: 'assets/Gibeck Humid-Vent (1).glb', scale: 20.0, position: [-9, -3.5, 0], rotation: [0, Math.PI/2 + Math.PI/4, 0], tooltip: 'Glbeck Humid Vent' },
+            { name: 'Halyard Attachment Tube', path: 'assets/HalyardAttachmentTube.glb', scale: 20.0, position: [7, 3, 0], rotation: [-Math.PI / 4, Math.PI/2 + Math.PI/4, 0], tooltip: 'Halyard Attachment Tube', needsClickableArea: true },
+            { name: 'Pulse Oximeter', path: 'assets/PulseOx.glb', scale: 0.2, position: [17, 3, 5], rotation: [Math.PI/4, Math.PI/2, 0], tooltip: 'Pulse Oximeter', needsClickableArea: true },
+            { name: 'Glbeck Humid Vent', path: 'assets/Gibeck Humid-Vent (1).glb', scale: 20.0, position: [-9, -3.5, 0], rotation: [0, Math.PI/2 + Math.PI/4, 0], tooltip: 'Glbeck Humid Vent', needsClickableArea: true },
             { name: 'Oxygen Regulator', path: 'assets/Oxygen Regulator.glb', scale: 20.0, position: [-3, -3.5, 0], rotation: [0, Math.PI/2 + Math.PI/4, 0], tooltip: 'Oxygen Regulator' },
             { name: 'Test Lung', path: 'assets/Test Lung 210-2025 1.glb', scale: 0.2, position: [3, -3.5, 0], rotation: [0, Math.PI/2 + Math.PI/4, 0], tooltip: 'Test Lung' },
-            { name: 'Green Oxygen Hose', path: 'assets/Green Oxygen Hose.glb', scale: 16.2, position: [10, -3.5, 0], rotation: [Math.PI/4, Math.PI/2 + Math.PI/4, 0], tooltip: 'Green Oxygen Hose' },
-            { name: '731 Power Adapter', path: 'assets/731%20Power%20Adapter.glb', scale: 0.121, position: [18, -3.5, 0], rotation: [Math.PI/4, Math.PI/2 + Math.PI/4, 0], tooltip: '731 Power Adapter' }
+            { name: 'Green Oxygen Hose', path: 'assets/Green Oxygen Hose.glb', scale: 16.2, position: [10, -3.5, 0], rotation: [Math.PI/4, Math.PI/2 + Math.PI/4, 0], tooltip: 'Green Oxygen Hose', needsClickableArea: true },
+            { name: '731 Power Adapter', path: 'assets/731%20Power%20Adapter.glb', scale: 0.121, position: [18, -3.5, 0], rotation: [Math.PI/4, Math.PI/2 + Math.PI/4, 0], tooltip: '731 Power Adapter', needsClickableArea: true }
         ];
 
         const loadPromises = modelConfigs.map(config => 
@@ -236,6 +236,11 @@ class App {
                     // Add the processed group to the scene and expand bounds
                     this.interactiveGroup.add(modelGroup);
                     this.totalBounds.expandByObject(modelGroup); // Expand by the positioned/scaled group
+                    
+                    // Add clickable area for tube models
+                    if (config.needsClickableArea) {
+                        this.addClickableArea(modelGroup, config);
+                    }
                     
                     console.log(`Processed and added model ${index + 1}/${results.length}: ${config.name}`);
                 });
@@ -1585,6 +1590,61 @@ class App {
         // IMPORTANT: Update projection matrix
         this.camera.updateProjectionMatrix();
         this.controls.update(); // Update controls after target change
+    }
+
+    // Add this new method after loadModels
+    addClickableArea(modelGroup, config) {
+        // Skip if not one of our target models
+        if (!['Ventilator Tube', 'Halyard Attachment Tube', 'Pulse Oximeter', 'Glbeck Humid Vent', 'Green Oxygen Hose', '731 Power Adapter'].includes(modelGroup.name)) return;
+
+        // Create geometry based on the model
+        let planeGeometry;
+        if (modelGroup.name === 'Ventilator Tube') {
+            planeGeometry = new THREE.PlaneGeometry(2, 6);
+        } else if (modelGroup.name === 'Halyard Attachment Tube') {
+            planeGeometry = new THREE.PlaneGeometry(10, 6);
+        } else if (modelGroup.name === 'Pulse Oximeter') {
+            planeGeometry = new THREE.PlaneGeometry(8, 8);
+        } else if (modelGroup.name === 'Glbeck Humid Vent') {
+            planeGeometry = new THREE.PlaneGeometry(4, 4);
+        } else if (modelGroup.name === 'Green Oxygen Hose') {
+            planeGeometry = new THREE.PlaneGeometry(6, 6);
+        } else if (modelGroup.name === '731 Power Adapter') {
+            planeGeometry = new THREE.PlaneGeometry(4, 7);
+        }
+
+        const planeMaterial = new THREE.MeshBasicMaterial({
+            color: 0x0057B8,
+            transparent: true,
+            opacity: 0.0,
+            side: THREE.DoubleSide
+        });
+        
+        const clickableArea = new THREE.Mesh(planeGeometry, planeMaterial);
+        
+        // Compensate for the model's scale to maintain size
+        const modelScale = modelGroup.scale.x;
+        clickableArea.scale.set(1/modelScale, 1/modelScale, 1/modelScale);
+        
+        // Set rotation based on the model type
+        if (modelGroup.name === 'Halyard Attachment Tube') {
+            clickableArea.rotation.set(0, 0, 0);
+        } else if (modelGroup.name === 'Pulse Oximeter') {
+            clickableArea.rotation.set(0, Math.PI/2, 0);
+            clickableArea.position.set(0, 0, 0);
+        } else if (modelGroup.name === 'Glbeck Humid Vent') {
+            clickableArea.rotation.set(0, Math.PI/2, 0);
+            clickableArea.position.set(0, 0, 0);
+        } else if (modelGroup.name === 'Green Oxygen Hose') {
+            clickableArea.rotation.set(0, Math.PI/2, 0); // Start with same rotation as others
+            clickableArea.position.set(0, 0, 0); // Start at center
+        }
+        
+        // Add as a child of the model group so it follows all transformations
+        modelGroup.add(clickableArea);
+        
+        // Copy the userData for interaction
+        clickableArea.userData = modelGroup.userData;
     }
 }
 

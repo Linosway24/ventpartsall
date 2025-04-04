@@ -1,49 +1,51 @@
 # Ventilator Parts Demonstration
 
-A 3D web viewer for ventilator parts using Three.js. This project provides an interactive way to view and examine ventilator components in a web browser.
+An interactive 3D visualization of ventilator parts and components. This web application allows users to explore and learn about different ventilator components through an intuitive interface.
 
 ## Features
 
-- Orthographic camera for accurate part visualization
-- Responsive design that maintains proper scaling
-- Clean, minimalist interface
-- Optimized 3D model loading
+- Interactive 3D model viewing
+- Clickable areas for component selection
+- Detailed information panel for each component
+- Smooth animations and transitions
+- Responsive design
+- HDR lighting for realistic rendering
 
-## Setup
+## Components
 
-1. Clone the repository:
-```bash
-git clone [your-repo-url]
-```
-
-2. Open `index.html` in a web server (local or hosted)
+- Ventilator Unit
+- Ventilator Circuit
+- HEPA Filter Attachment
+- Halyard Attachment Tube
+- Pulse Oximeter
+- Glbeck Humid Vent
+- Oxygen Regulator
+- Test Lung
+- Green Oxygen Hose
+- 731 Power Adapter
 
 ## Technologies Used
 
 - Three.js for 3D rendering
-- GLTFLoader for 3D model loading
-- Vanilla JavaScript for application logic
+- GSAP for animations
+- dat.GUI for controls
+- Custom WebGL shaders
+- Modern JavaScript (ES6+)
 
-## Project Structure
+## Setup
 
-- `main.js` - Main application code
-- `index.html` - Entry point
-- `assets/` - Contains 3D models and resources
+1. Clone the repository
+2. Open the project directory
+3. Start a local server (e.g., using Python: `python -m http.server 8080`)
+4. Open `http://localhost:8080` in your browser
 
-## Development
+## Usage
 
-To run locally:
-1. Use a local web server (e.g., Live Server in VS Code)
-2. Open index.html in your browser
+- Click on components to zoom in and view details
+- Right-click to open the information panel
+- Use mouse/touch to rotate and pan the view
+- Press 'G' to toggle the GUI controls
 
-## Files
+## License
 
-- `index.html`: Main HTML structure
-- `styles.css`: Styling for the 3D viewer
-- `main.js`: Three.js scene setup and controls
-
-## Notes for Articulate Storyline
-
-- The viewer is responsive and will adapt to the Web Object's dimensions
-- Interactions are handled through OrbitControls (rotate, pan, zoom)
-- Background is set to black but can be modified in styles.css 
+MIT License 
