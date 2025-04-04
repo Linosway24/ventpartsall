@@ -1,15 +1,30 @@
 # Ventilator Parts Demonstration
 
-An interactive 3D visualization of ventilator parts and components. This web application allows users to explore and learn about different ventilator components through an intuitive interface.
+An interactive 3D demonstration of ventilator parts and components using Three.js. This application allows users to explore and learn about various ventilator components through an intuitive 3D interface.
 
 ## Features
 
-- Interactive 3D model viewing
-- Clickable areas for component selection
-- Detailed information panel for each component
-- Smooth animations and transitions
+- Interactive 3D models of ventilator parts
+- Detailed information panels for each component
+- Audio descriptions for each part
+- Zoom and rotation controls
 - Responsive design
-- HDR lighting for realistic rendering
+
+## Setup
+
+1. Clone the repository
+2. Open `index.html` in a web server
+3. Navigate through the models using mouse controls:
+   - Click to zoom in/out
+   - Right-click for information panel
+   - Drag to rotate when zoomed in
+
+## Technologies Used
+
+- Three.js for 3D rendering
+- GSAP for animations
+- dat.GUI for controls
+- Web Audio API for sound playback
 
 ## Components
 
@@ -23,28 +38,6 @@ An interactive 3D visualization of ventilator parts and components. This web app
 - Test Lung
 - Green Oxygen Hose
 - 731 Power Adapter
-
-## Technologies Used
-
-- Three.js for 3D rendering
-- GSAP for animations
-- dat.GUI for controls
-- Custom WebGL shaders
-- Modern JavaScript (ES6+)
-
-## Setup
-
-1. Clone the repository
-2. Open the project directory
-3. Start a local server (e.g., using Python: `python -m http.server 8080`)
-4. Open `http://localhost:8080` in your browser
-
-## Usage
-
-- Click on components to zoom in and view details
-- Right-click to open the information panel
-- Use mouse/touch to rotate and pan the view
-- Press 'G' to toggle the GUI controls
 
 ## License
 

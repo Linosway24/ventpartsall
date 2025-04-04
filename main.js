@@ -143,6 +143,10 @@ class App {
         } else {
             console.log('Next button not found in bottom navigation');
         }
+
+        // Initialize audio objects
+        this.audioElements = new Map();
+        this.loadAudioFiles();
     }
 
     setupLights() {
@@ -214,9 +218,25 @@ class App {
             new Promise((resolve, reject) => {
                 this.loader.load(
                     config.path, 
-                    (gltf) => resolve({ gltf, config }), // Resolve with gltf and config
-                    undefined, // Progress callback (optional)
-                    (error) => reject({ error, config }) // Reject with error and config
+                    (gltf) => {
+                        // Special handling for Halyard Attachment Tube
+                        if (config.name === 'Halyard Attachment Tube') {
+                            gltf.scene.traverse((child) => {
+                                if (child.isMesh) {
+                                    // Ensure proper material settings
+                                    child.material.side = THREE.DoubleSide;
+                                    child.material.depthWrite = true;
+                                    child.material.depthTest = true;
+                                    child.material.transparent = false;
+                                    // Force material update
+                                    child.material.needsUpdate = true;
+                                }
+                            });
+                        }
+                        resolve({ gltf, config });
+                    },
+                    undefined,
+                    (error) => reject({ error, config })
                 );
             })
         );
@@ -501,7 +521,10 @@ class App {
     
     // Zoom in on a model
     zoomIn(model) {
-        if (this.isZoomed) return;
+        if (!model || this.isZoomed) return;
+        
+        // Play the audio for this model
+        this.playModelAudio(model.name);
         
         this.isZoomed = true;
         this.zoomedModel = model;
@@ -601,7 +624,22 @@ class App {
     
     // Restore original view
     zoomOut(onCompleteCallback = null) {
-        if (!this.isZoomed || !this.zoomedModel) return;
+        if (!this.isZoomed) {
+            if (onCompleteCallback && typeof onCompleteCallback === 'function') {
+                console.log("Zoom out complete, executing callback.");
+                onCompleteCallback();
+            } else {
+                console.log("Zoom out complete, closing side panel by default.");
+                this.closeSidePanel();
+            }
+            return;
+        }
+        
+        // Stop any playing audio
+        for (const audio of this.audioElements.values()) {
+            audio.pause();
+            audio.currentTime = 0;
+        }
         
         const model = this.zoomedModel;
         this.isRotating = false;
@@ -1746,40 +1784,51 @@ class App {
     // Add navigation method
     navigateModels(direction) {
         console.log('navigateModels called with direction:', direction);
-        console.log('Current model index:', this.currentModelIndex);
-        console.log('Total models:', this.modelGroups.length);
         
         if (this.modelGroups.length === 0) {
             console.log('No models available for navigation');
             return;
         }
+
+        // Find the current model's index based on what's currently zoomed or shown in panel
+        let currentModel = this.zoomedModel;
+        if (!currentModel && this.sidePanelOpen) {
+            // If no model is zoomed but panel is open, find the model shown in panel
+            const panelTitle = document.querySelector('.panel-header .header-title').textContent;
+            currentModel = this.modelGroups.find(model => model.name === panelTitle);
+        }
+
+        if (!currentModel) {
+            console.log('No current model found');
+            return;
+        }
+
+        // Find current index
+        const currentIndex = this.modelGroups.findIndex(m => m === currentModel);
+        console.log('Current model:', currentModel.name, 'at index:', currentIndex);
         
-        // Keep finding next index until we get a non-Ventilator Unit model
-        let nextIndex = this.currentModelIndex;
+        // Find next valid model (skipping Ventilator Unit)
+        let nextIndex = currentIndex;
         do {
             nextIndex = (nextIndex + direction + this.modelGroups.length) % this.modelGroups.length;
         } while (this.modelGroups[nextIndex].name === 'Ventilator Unit');
         
-        this.currentModelIndex = nextIndex;
-        console.log('New model index:', this.currentModelIndex);
+        console.log('New model index:', nextIndex);
         
-        // Get the model at current index
-        const targetModel = this.modelGroups[this.currentModelIndex];
+        // Get the model at next index
+        const targetModel = this.modelGroups[nextIndex];
         console.log('Target model:', targetModel ? targetModel.name : 'none');
         
-        // Simulate a click on this model
+        // Navigate to the target model
         if (targetModel) {
-            // If we're zoomed into a different model, zoom out first
             if (this.isZoomed && this.zoomedModel !== targetModel) {
                 console.log('Zooming out from current model before navigating');
                 this.zoomOut(() => {
-                    // After zooming out, zoom into new model and update panel
                     console.log('Zooming into new model:', targetModel.name);
                     this.zoomIn(targetModel);
                     this.showSidePanel(targetModel);
                 });
             } else {
-                // If not zoomed or same model, just zoom and update panel
                 console.log('Directly navigating to new model:', targetModel.name);
                 this.zoomIn(targetModel);
                 this.showSidePanel(targetModel);
@@ -1796,6 +1845,48 @@ class App {
         } else if (this.zoomedModel !== model) {
             this.zoomOut(() => {
                 this.zoomIn(model);
+            });
+        }
+    }
+
+    // Add audio loading method
+    loadAudioFiles() {
+        // Create audio elements for each model
+        const modelAudioMap = {
+            'Pulse Oximeter': 'Pulse Ox.mp3',
+            'Glbeck Humid Vent': 'glibeck.mp3',
+            'Green Oxygen Hose': 'Green Oxygen hose.mp3',
+            'HEPA Filter Attachment': 'Heepa.mp3',
+            'Test Lung': 'Test lung.mp3',
+            '731 Power Adapter': 'Ac Power.mp3',
+            'Oxygen Regulator': 'Oxygen reg.mp3',
+            'Ventilator Tube': 'Ventlator Circut.mp3',
+            'Halyard Attachment Tube': 'hylard.mp3'
+        };
+
+        // Load each audio file
+        for (const [modelName, audioFile] of Object.entries(modelAudioMap)) {
+            const audio = new Audio(`audio/${audioFile}`);
+            audio.preload = 'auto';
+            this.audioElements.set(modelName, audio);
+            console.log('Loaded audio for:', modelName); // Add logging
+        }
+    }
+
+    // Play audio for a model
+    playModelAudio(modelName) {
+        // Stop any currently playing audio
+        for (const audio of this.audioElements.values()) {
+            audio.pause();
+            audio.currentTime = 0;
+        }
+        
+        // Play the audio for this model
+        const audio = this.audioElements.get(modelName);
+        if (audio) {
+            console.log('Playing audio for:', modelName);
+            audio.play().catch(error => {
+                console.log('Audio playback failed:', error);
             });
         }
     }
