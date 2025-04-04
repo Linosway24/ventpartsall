@@ -171,14 +171,14 @@ class App {
     loadModels() {
         const modelConfigs = [
             { name: 'Ventilator Unit', path: 'assets/ventilator.glb', scale: 1, position: [-15, 0, 0], rotation: [0,0,0], tooltip: 'Main ventilator device providing respiratory support' },
-            { name: 'Ventilator Tube', path: 'assets/VentilatorTube-WhitePlastic.glb', scale: 0.1125, position: [-9, 4, 0], rotation: [0,0,0], tooltip: 'Flexible breathing tube for patient ventilation' },
-            { name: 'HEPA Filter Attachment', path: 'assets/HeppaAttachment-2025.glb', scale: 0.3, position: [-3, 3, 0], rotation: [0,0,0], tooltip: 'High-Efficiency Particulate Air filter attachment' },
-            { name: 'Halyard Attachment Tube', path: 'assets/HalyardAttachmentTube.glb', scale: 20.0, position: [7, 3, 0], rotation: [-Math.PI / 4, Math.PI/2 + Math.PI/4, 0], tooltip: 'Halyard attachment tube for ventilation' },
-            { name: 'Pulse Oximeter', path: 'assets/PulseOx.glb', scale: 0.2, position: [17, 3, 5], rotation: [Math.PI/4, Math.PI/2, 0], tooltip: 'Pulse oximeter for monitoring oxygen saturation' },
-            { name: 'Glbeck Humid Vent', path: 'assets/Gibeck Humid-Vent (1).glb', scale: 20.0, position: [-9, -3.5, 0], rotation: [0, Math.PI/2 + Math.PI/4, 0], tooltip: 'Humidification vent for patient comfort' },
-            { name: 'Oxygen Regulator', path: 'assets/Oxygen Regulator.glb', scale: 20.0, position: [-3, -3.5, 0], rotation: [0, Math.PI/2 + Math.PI/4, 0], tooltip: 'Oxygen flow regulator' },
-            { name: 'Test Lung', path: 'assets/Test Lung 210-2025 1.glb', scale: 0.2, position: [3, -3.5, 0], rotation: [0, Math.PI/2 + Math.PI/4, 0], tooltip: 'Test lung for ventilator calibration' },
-            { name: 'Green Oxygen Hose', path: 'assets/Green Oxygen Hose.glb', scale: 16.2, position: [10, -3.5, 0], rotation: [Math.PI/4, Math.PI/2 + Math.PI/4, 0], tooltip: 'Green oxygen hose for oxygen delivery' },
+            { name: 'Ventilator Tube', path: 'assets/VentilatorTube-WhitePlastic.glb', scale: 0.1125, position: [-9, 4, 0], rotation: [0,0,0], tooltip: 'Ventilator Circuit' },
+            { name: 'HEPA Filter Attachment', path: 'assets/HeppaAttachment-2025.glb', scale: 0.3, position: [-3, 3, 0], rotation: [0,0,0], tooltip: 'HEPA Filter Attachment' },
+            { name: 'Halyard Attachment Tube', path: 'assets/HalyardAttachmentTube.glb', scale: 20.0, position: [7, 3, 0], rotation: [-Math.PI / 4, Math.PI/2 + Math.PI/4, 0], tooltip: 'Halyard Attachment Tube' },
+            { name: 'Pulse Oximeter', path: 'assets/PulseOx.glb', scale: 0.2, position: [17, 3, 5], rotation: [Math.PI/4, Math.PI/2, 0], tooltip: 'Pulse Oximeter' },
+            { name: 'Glbeck Humid Vent', path: 'assets/Gibeck Humid-Vent (1).glb', scale: 20.0, position: [-9, -3.5, 0], rotation: [0, Math.PI/2 + Math.PI/4, 0], tooltip: 'Glbeck Humid Vent' },
+            { name: 'Oxygen Regulator', path: 'assets/Oxygen Regulator.glb', scale: 20.0, position: [-3, -3.5, 0], rotation: [0, Math.PI/2 + Math.PI/4, 0], tooltip: 'Oxygen Regulator' },
+            { name: 'Test Lung', path: 'assets/Test Lung 210-2025 1.glb', scale: 0.2, position: [3, -3.5, 0], rotation: [0, Math.PI/2 + Math.PI/4, 0], tooltip: 'Test Lung' },
+            { name: 'Green Oxygen Hose', path: 'assets/Green Oxygen Hose.glb', scale: 16.2, position: [10, -3.5, 0], rotation: [Math.PI/4, Math.PI/2 + Math.PI/4, 0], tooltip: 'Green Oxygen Hose' },
             { name: '731 Power Adapter', path: 'assets/731%20Power%20Adapter.glb', scale: 0.121, position: [18, -3.5, 0], rotation: [Math.PI/4, Math.PI/2 + Math.PI/4, 0], tooltip: '731 Power Adapter' }
         ];
 
@@ -702,19 +702,664 @@ class App {
 
         let content = '';
         
-        // Add model name with custom title for Ventilator Tube
+        // Add model name
         const displayName = model.name === 'Ventilator Tube' ? 'Ventilator Circuit' : model.name;
-        content += `<h2 style="margin-bottom: 20px; font-size: 24px;">${displayName}</h2>`;
+        content += `
+            <div style="
+                background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                padding: 15px 20px;
+                border-radius: 12px;
+                margin-bottom: 20px;
+            ">
+                <h2 style="
+                    margin: 0;
+                    font-size: 20px;
+                    color: white;
+                    font-weight: 500;
+                ">${displayName}</h2>
+            </div>
+        `;
         
-        // Add description
+        // Add description based on model
         let description = '';
         if (model.name === 'Ventilator Tube') {
             description = `
-                <ul style="margin-bottom: 15px; line-height: 1.5; padding-left: 20px;">
-                    <li>Connects the ventilator to the patient</li>
-                    <li>Delivers oxygen and removes exhaled air</li>
-                    <li>Proper assembly ensures effective ventilation and minimizes air leaks</li>
-                </ul>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Connects the ventilator to the patient
+                    </div>
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Delivers oxygen and removes exhaled air
+                    </div>
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Proper assembly ensures effective ventilation and minimizes air leaks
+                    </div>
+                </div>
+            `;
+        } else if (model.name === 'HEPA Filter Attachment') {
+            description = `
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Filters exhaled air to prevent contamination
+                    </div>
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Protects healthcare workers from airborne particles
+                    </div>
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Must be replaced according to schedule
+                    </div>
+                </div>
+            `;
+        } else if (model.name === 'Pulse Oximeter') {
+            description = `
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Monitors patient's oxygen saturation levels
+                    </div>
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Provides continuous heart rate readings
+                    </div>
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Alerts staff to dangerous changes in vital signs
+                    </div>
+                </div>
+            `;
+        } else if (model.name === 'Halyard Attachment Tube') {
+            description = `
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Connects to ventilator for secure airflow delivery
+                    </div>
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Compatible with standard ventilator circuits
+                    </div>
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Ensures airtight seal for reliable ventilation
+                    </div>
+                </div>
+            `;
+        } else if (model.name === 'Glbeck Humid Vent') {
+            description = `
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Adds moisture to inhaled air for patient comfort
+                    </div>
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Helps maintain optimal airway temperature
+                    </div>
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Reduces risk of airway dryness and irritation
+                    </div>
+                </div>
+            `;
+        } else if (model.name === 'Oxygen Regulator') {
+            description = `
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Controls oxygen flow rate to the patient
+                    </div>
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Maintains precise oxygen pressure levels
+                    </div>
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Features adjustable flow settings for patient needs
+                    </div>
+                </div>
+            `;
+        } else if (model.name === 'Test Lung') {
+            description = `
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Simulates patient breathing for ventilator testing
+                    </div>
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Verifies proper ventilator function and settings
+                    </div>
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Essential for equipment checks and training
+                    </div>
+                </div>
+            `;
+        } else if (model.name === 'Green Oxygen Hose') {
+            description = `
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Delivers oxygen from wall supply to ventilator
+                    </div>
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        High-pressure rated for safe oxygen transport
+                    </div>
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Color-coded green for oxygen line identification
+                    </div>
+                </div>
+            `;
+        } else if (model.name === '731 Power Adapter') {
+            description = `
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Provides reliable power supply to ventilator unit
+                    </div>
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Converts AC power to appropriate DC voltage
+                    </div>
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Features safety mechanisms for stable operation
+                    </div>
+                </div>
             `;
         } else if (model.userData && model.userData.tooltipText) {
             description = model.userData.tooltipText;
