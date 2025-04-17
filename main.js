@@ -15,10 +15,10 @@ class App {
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.container.appendChild(this.renderer.domElement);
 
-        // --- Enhanced Renderer settings for HDR ---
-        this.renderer.physicallyCorrectLights = true;
-        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 7.0; // Decreased from 10.0 to 7.0
+        // --- Basic Renderer settings ---
+        this.renderer.physicallyCorrectLights = false;
+        this.renderer.toneMapping = THREE.LinearToneMapping;
+        this.renderer.toneMappingExposure = 1.0;
         this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
         // --- Define properties used by GUI and event listeners EARLY ---
@@ -147,33 +147,92 @@ class App {
         // Initialize audio objects
         this.audioElements = new Map();
         this.loadAudioFiles();
+
+        // Initialize OrbitControls
+        this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+        this.controls.enabled = false; // Disable all controls
+        this.controls.enableRotate = false; // Disable rotation
+        this.controls.enablePan = false; // Disable panning
+        this.controls.enableZoom = false; // Disable zooming
     }
 
     setupLights() {
-        // --- Load HDR environment map with PMREMGenerator ---
-        const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
-        pmremGenerator.compileEquirectangularShader();
+        // Remove HDR environment map
+        this.scene.environment = null;
+        
+        // Set background to Air Force blue
+        this.scene.background = new THREE.Color(0x00308F);
+        this.scene.background.multiplyScalar(0.9); // Keep the 0.9 opacity
+        
+        // Subtle ambient light for base illumination
+        this.ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        this.scene.add(this.ambientLight);
+        
+        // Main front light - stronger for primary illumination
+        const frontLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        frontLight.position.set(5, 10, 7.5);
+        frontLight.castShadow = true;
+        this.scene.add(frontLight);
+        
+        // Back light for rim definition
+        const backLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        backLight.position.set(-5, 8, -7.5);
+        backLight.castShadow = true;
+        this.scene.add(backLight);
+        
+        // Right side light
+        const rightLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        rightLight.position.set(7.5, 8, -5);
+        rightLight.castShadow = true;
+        this.scene.add(rightLight);
+        
+        // Left side light
+        const leftLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        leftLight.position.set(-7.5, 8, 5);
+        leftLight.castShadow = true;
+        this.scene.add(leftLight);
+        
+        // Additional fill light for screen detail
+        const fillLight = new THREE.DirectionalLight(0xfff0e0, 0.3);
+        fillLight.position.set(0, -2, 10);
+        this.scene.add(fillLight);
+        
+        // Store lights for individual models
+        this.modelLights = new Map();
 
-        const rgbeLoader = new THREE.RGBELoader();
-        rgbeLoader.setDataType(THREE.FloatType);
-        rgbeLoader.load('libs/TS Studio Tabletop.hdr', (texture) => {
-            texture.mapping = THREE.EquirectangularReflectionMapping;
+        // Enable shadow rendering
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    }
+
+    setupModelLights(model) {
+        if (this.modelLights.has(model)) {
+            const existingLights = this.modelLights.get(model);
+            existingLights.forEach(light => this.scene.remove(light));
+        }
+
+        const lights = [];
+        
+        // Only add focused lighting for non-ventilator models
+        if (model.name !== 'Ventilator Unit') {
+            // Main spotlight for focused illumination
+            const spotLight = new THREE.SpotLight(0xffffff, 1.2);
+            spotLight.position.set(5, 8, 10);
+            spotLight.angle = Math.PI / 6;
+            spotLight.penumbra = 0.7;
+            spotLight.castShadow = true;
+            lights.push(spotLight);
             
-            // Only use HDR for environment lighting, not background
-            const envMap = pmremGenerator.fromEquirectangular(texture).texture;
-            this.scene.environment = envMap;
-            
-            // Add ambient light to boost overall brightness
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-            this.scene.add(ambientLight);
-            
-            texture.dispose();
-            pmremGenerator.dispose();
-            
-            console.log("HDR loaded and processed with PMREM");
-        }, undefined, (error) => {
-            console.error('Error loading HDR:', error);
-        });
+            // Fill light for details
+            const fillLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            fillLight.position.set(-3, 2, 5);
+            fillLight.castShadow = true;
+            lights.push(fillLight);
+        }
+
+        // Add all lights to scene
+        lights.forEach(light => this.scene.add(light));
+        this.modelLights.set(model, lights);
     }
     
     setupGUI() {
@@ -199,7 +258,7 @@ class App {
         });
         halyardFolder.open();
     }
-    
+
     loadModels() {
         const modelConfigs = [
             { name: 'Ventilator Unit', path: 'assets/ventilator.glb', scale: 1, position: [-15, 0, 0], rotation: [0,0,0], tooltip: 'Main ventilator device providing respiratory support' },
@@ -211,7 +270,8 @@ class App {
             { name: 'Oxygen Regulator', path: 'assets/Oxygen Regulator.glb', scale: 20.0, position: [-3, -3.5, 0], rotation: [0, Math.PI/2 + Math.PI/4, 0], tooltip: 'Oxygen Regulator' },
             { name: 'Test Lung', path: 'assets/Test Lung 210-2025 1.glb', scale: 0.2, position: [3, -3.5, 0], rotation: [0, Math.PI/2 + Math.PI/4, 0], tooltip: 'Test Lung' },
             { name: 'Green Oxygen Hose', path: 'assets/Green Oxygen Hose.glb', scale: 16.2, position: [10, -3.5, 0], rotation: [Math.PI/4, Math.PI/2 + Math.PI/4, 0], tooltip: 'Green Oxygen Hose', needsClickableArea: true },
-            { name: '731 Power Adapter', path: 'assets/731%20Power%20Adapter.glb', scale: 0.121, position: [18, -3.5, 0], rotation: [Math.PI/4, Math.PI/2 + Math.PI/4, 0], tooltip: '731 Power Adapter', needsClickableArea: true }
+            { name: '731 Power Adapter', path: 'assets/731%20Power%20Adapter.glb', scale: 0.121, position: [18, -3.5, 0], rotation: [Math.PI/4, Math.PI/2 + Math.PI/4, 0], tooltip: '731 Power Adapter', needsClickableArea: true },
+            { name: 'O2 Bag and Connector', path: 'assets/O2 Bag and connector-06.glb', scale: 1.0, position: [0, 0, 0], rotation: [0, 0, 0], tooltip: 'O2 Bag and Connector', needsClickableArea: true }
         ];
 
         const loadPromises = modelConfigs.map(config => 
@@ -222,7 +282,7 @@ class App {
                         // Special handling for Halyard Attachment Tube
                         if (config.name === 'Halyard Attachment Tube') {
                             gltf.scene.traverse((child) => {
-                                if (child.isMesh) {
+                    if (child.isMesh) {
                                     // Ensure proper material settings
                                     child.material.side = THREE.DoubleSide;
                                     child.material.depthWrite = true;
@@ -254,7 +314,7 @@ class App {
 
                     // Center the mesh geometry within the group
                     const box = new THREE.Box3().setFromObject(mesh);
-                    const center = box.getCenter(new THREE.Vector3());
+                const center = box.getCenter(new THREE.Vector3());
                     mesh.position.sub(center);
                     modelGroup.add(mesh);
 
@@ -379,8 +439,8 @@ class App {
                     currentObj = currentObj.parent;
                 }
                 
-                // If we found an object with tooltip data
-                if (currentObj && currentObj.userData.tooltipText) {
+                // If we found an object with tooltip data and it's not the Ventilator Unit
+                if (currentObj && currentObj.userData.tooltipText && currentObj.name !== 'Ventilator Unit') {
                     // Show tooltip
                     this.tooltip.innerHTML = currentObj.userData.tooltipText;
                     this.tooltip.style.display = 'block';
@@ -453,6 +513,12 @@ class App {
             }
             
             if (!model || model === this.interactiveGroup) return; // Skip if we didn't find a valid model
+            
+            // Skip if this is the Ventilator Unit
+            if (model.name === 'Ventilator Unit') {
+                console.log('Ventilator Unit clicked - ignoring');
+                return;
+            }
 
             console.log('Clicked model:', model.name, model); 
 
@@ -529,10 +595,12 @@ class App {
         this.isZoomed = true;
         this.zoomedModel = model;
         this.hideTooltip();
-        // REMOVE: this.boundingBoxes.forEach(box => { if (box) box.visible = false; });
-
+        
+        // Setup lights for this model
+        this.setupModelLights(model);
+        
         // Fade out other objects
-        this.fadeOutOtherObjects(model); // Default duration is 0.5s
+        this.fadeOutOtherObjects(model);
 
         let targetScaleVector;
         let targetPosition = new THREE.Vector3(0, 0, 5); // Default target position
@@ -644,8 +712,15 @@ class App {
         const model = this.zoomedModel;
         this.isRotating = false;
 
+        // Remove model-specific lights
+        if (this.modelLights.has(model)) {
+            const lights = this.modelLights.get(model);
+            lights.forEach(light => this.scene.remove(light));
+            this.modelLights.delete(model);
+        }
+        
         // Fade in all objects
-        this.fadeInAllObjects(); // Default duration is 0.5s
+        this.fadeInAllObjects();
         
         // Get original transform values
         const origPos = model.userData.originalPosition;
@@ -1554,6 +1629,12 @@ class App {
                 model = model.parent;
             }
             
+            // Skip if this is the Ventilator Unit
+            if (model && model.name === 'Ventilator Unit') {
+                console.log('Ventilator Unit right-clicked - ignoring');
+                return;
+            }
+            
             // If we found a model (and not the group itself), show its info
             if (model && model !== this.interactiveGroup) {
                 this.showSidePanel(model);
@@ -1633,25 +1714,27 @@ class App {
 
     // --- UPDATED HELPER FUNCTIONS for fading ---
 
-    fadeOutOtherObjects(selectedObject, duration = 0.5) {
-        this.fadeInAllObjects(0); // Instantly restore any previously faded objects before starting new fade
+    fadeOutOtherObjects(selectedObject, duration = 0.8) {
+        this.fadeInAllObjects(0);
 
         this.interactiveGroup.children.forEach(object => {
-            if (object !== selectedObject && object.isGroup) { // Check interactive groups
+            if (object !== selectedObject && object.isGroup) {
                 object.traverse((child) => {
                     if (child.isMesh && child.material) {
                         const materials = Array.isArray(child.material) ? child.material : [child.material];
                         materials.forEach(material => {
                             if (!this.originalMaterialStates.has(material)) {
-                                // Store original state
                                 this.originalMaterialStates.set(material, {
                                     originalOpacity: material.opacity,
                                     originalTransparent: material.transparent
                                 });
                             }
-                            // Make transparent and animate opacity to 0
                             material.transparent = true;
-                            gsap.to(material, { opacity: 0.0, duration: duration, ease: "power1.inOut" });
+                            gsap.to(material, { 
+                                opacity: 0.05, // Reduced from 0.15 to be much less visible
+                                duration: duration,
+                                ease: "power2.inOut"
+                            });
                         });
                     }
                 });
@@ -1828,7 +1911,7 @@ class App {
                     this.zoomIn(targetModel);
                     this.showSidePanel(targetModel);
                 });
-            } else {
+        } else {
                 console.log('Directly navigating to new model:', targetModel.name);
                 this.zoomIn(targetModel);
                 this.showSidePanel(targetModel);
