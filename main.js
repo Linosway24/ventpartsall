@@ -113,7 +113,7 @@ class App {
         // --- Properties for bounds calculation ---
         this.totalBounds = new THREE.Box3();
         this.allModelsLoaded = false;
-        this.paddingFactor = 1.2; // INCREASED padding (was 1.1)
+        this.paddingFactor = 1.05; // INCREASED padding (was 1.1)
         // --- End bounds properties ---
 
         // Add current model index tracking
@@ -261,18 +261,18 @@ class App {
 
     loadModels() {
         const modelConfigs = [
-            { name: 'Ventilator Unit', path: 'assets/ventilator.glb', scale: 1, position: [-15, 0, 0], rotation: [0,0,0], tooltip: 'Main ventilator device providing respiratory support' },
-            { name: 'Ventilator Tube', path: 'assets/VentilatorTube-WhitePlastic.glb', scale: 0.1125, position: [-9, 4, 0], rotation: [0,0,0], tooltip: 'Ventilator Circuit', needsClickableArea: true },
-            { name: 'HEPA Filter Attachment', path: 'assets/HeppaAttachment-2025.glb', scale: 0.3, position: [-3, 3, 0], rotation: [0,0,0], tooltip: 'HEPA Filter Attachment' },
-            { name: 'Halyard Attachment Tube', path: 'assets/HalyardAttachmentTube.glb', scale: 20.0, position: [7, 3, 0], rotation: [-Math.PI / 4, Math.PI/2 + Math.PI/4, 0], tooltip: 'Halyard Attachment Tube', needsClickableArea: true },
-            { name: 'Pulse Oximeter', path: 'assets/PulseOx.glb', scale: 0.2, position: [17, 3, 5], rotation: [Math.PI/4, Math.PI/2, 0], tooltip: 'Pulse Oximeter', needsClickableArea: true },
-            { name: 'Glbeck Humid Vent', path: 'assets/Gibeck Humid-Vent (1).glb', scale: 2.0, position: [-9, -3.5, 0], rotation: [0, Math.PI/2 + Math.PI/4, 0], tooltip: 'Glbeck Humid Vent', needsClickableArea: true },
-            { name: 'Oxygen Regulator', path: 'assets/Oxygen Regulator.glb', scale: 20.0, position: [-3, -3.5, 0], rotation: [0, Math.PI/2 + Math.PI/4, 0], tooltip: 'Oxygen Regulator' },
-            { name: 'Test Lung', path: 'assets/Test Lung 210-2025 1.glb', scale: 0.2, position: [3, -3.5, 0], rotation: [0, Math.PI/2 + Math.PI/4, 0], tooltip: 'Test Lung' },
-            { name: 'Green Oxygen Hose', path: 'assets/Green Oxygen Hose.glb', scale: 16.2, position: [10, -3.5, 0], rotation: [Math.PI/4, Math.PI/2 + Math.PI/4, 0], tooltip: 'Green Oxygen Hose', needsClickableArea: true },
-            { name: '731 Power Adapter', path: 'assets/731%20Power%20Adapter.glb', scale: 0.121, position: [18, -3.5, 0], rotation: [Math.PI/4, Math.PI/2 + Math.PI/4, 0], tooltip: '731 Power Adapter', needsClickableArea: true },
-            { name: 'O2 Bag and Connector', path: 'assets/O2 Bag and connector-06.glb', scale: 0.5, position: [0, 0, 0], rotation: [0, 0, 0], tooltip: 'O2 Bag and Connector', needsClickableArea: true },
-            { name: 'HME to Entitle O2', path: 'assets/HMEtoEntitleO2.glb', scale: 2.0, position: [5, -3.5, 0], rotation: [0, 0, 0], tooltip: 'HME to Entitle O2', needsClickableArea: true }
+            { name: 'Ventilator Unit', path: 'assets/ventilator.glb', scale: 1.75, position: [-5, 0, 0], rotation: [0,0,0], tooltip: 'Main ventilator device providing respiratory support' },
+            { name: '731 Power Adapter', path: 'assets/731%20Power%20Adapter.glb', scale: 0.25, position: [-21, 8, 0], rotation: [Math.PI/4, Math.PI/2 + Math.PI/4, 0], tooltip: '731 Power Adapter', needsClickableArea: true },
+            { name: 'Oxygen Reservoir Bag Assembly', path: 'assets/O2 Bag and connector-06.glb', scale: 0.72, position: [-20, 0.5, 0], rotation: [0, 0, 0], tooltip: 'Oxygen Reservoir Bag Assembly', needsClickableArea: true },
+            { name: 'HME to Entitle O2', path: 'assets/HMEtoEntitleO2.glb', scale: 1.9734, position: [-15, -8, 0], rotation: [0, 0, 0], tooltip: 'HME to Entitle O2', needsClickableArea: true },
+            { name: 'Green Oxygen Hose', path: 'assets/Green Oxygen Hose.glb', scale: 25.4826, position: [9.5, 5.5, 0], rotation: [Math.PI/4, Math.PI/2 + Math.PI/4, 0], tooltip: 'Green Oxygen Hose', needsClickableArea: true },
+            { name: 'Test Lung', path: 'assets/Test Lung 210-2025 1.glb', scale: 0.40625, position: [7.5, -0.5, 0], rotation: [0, Math.PI/2 + Math.PI/4, 0], tooltip: 'Test Lung' },
+            { name: 'Pulse Oximeter', path: 'assets/PulseOx.glb', scale: 0.3299, position: [8, -7, 0], rotation: [Math.PI/4, Math.PI/2, 0], tooltip: 'Pulse Oximeter', needsClickableArea: true },
+            { name: 'Halyard Attachment Tube', path: 'assets/HalyardAttachmentTube.glb', scale: 22.23, position: [-5, 11, 0], rotation: [-Math.PI / 4, Math.PI/2 + Math.PI/4, 0], tooltip: 'Halyard Attachment Tube', needsClickableArea: true },
+            { name: 'HEPA Filter Attachment', path: 'assets/HeppaAttachment-2025.glb', scale: 0.585, position: [3, 8.5, 0], rotation: [0,0,0], tooltip: 'HEPA Filter Attachment' },
+            { name: 'Gibeck Humid Vent', path: 'assets/Gibeck Humid-Vent (1).glb', scale: 2.6, position: [-8.5, -10.5, 0], rotation: [0, Math.PI/2 + Math.PI/4, 0], tooltip: 'Gibeck Humid Vent', needsClickableArea: true },
+            { name: 'Oxygen Regulator', path: 'assets/Oxygen Regulator.glb', scale: 26.0, position: [-4, -10.5, 0], rotation: [0, Math.PI/2 + Math.PI/4, 0], tooltip: 'Oxygen Regulator' },
+            { name: 'Ventilator Tube Circuit', path: 'assets/VentilatorTube-WhitePlastic.glb', scale: 0.23, position: [-14, 10.5, 0], rotation: [0, 0, 0], tooltip: 'Ventilator Tube Circuit', needsClickableArea: true }
         ];
 
         const loadPromises = modelConfigs.map(config => 
@@ -283,7 +283,7 @@ class App {
                         // Special handling for Halyard Attachment Tube
                         if (config.name === 'Halyard Attachment Tube') {
                             gltf.scene.traverse((child) => {
-                    if (child.isMesh) {
+                                if (child.isMesh) {
                                     // Ensure proper material settings
                                     child.material.side = THREE.DoubleSide;
                                     child.material.depthWrite = true;
@@ -309,22 +309,23 @@ class App {
 
                 let initialVentilatorScale = 1; // Variable to store ventilator scale
 
-                results.forEach(({ gltf, config }, index) => { // Added index for debugging
+                // First, create a map of all models
+                const modelMap = new Map();
+                results.forEach(({ gltf, config }) => {
                     const modelGroup = new THREE.Group();
                     const mesh = gltf.scene;
 
                     // Center the mesh geometry within the group
                     const box = new THREE.Box3().setFromObject(mesh);
-                const center = box.getCenter(new THREE.Vector3());
+                    const center = box.getCenter(new THREE.Vector3());
                     mesh.position.sub(center);
                     modelGroup.add(mesh);
 
                     // Apply scale and position to the GROUP
                     if (config.name === 'Ventilator Unit') {
-                        const ventBox = new THREE.Box3().setFromObject(modelGroup); // Use group for accurate bounds
+                        const ventBox = new THREE.Box3().setFromObject(modelGroup);
                         const ventSize = ventBox.getSize(new THREE.Vector3());
-                        // Calculate scale based on initial camera view (APPROXIMATION)
-                        const initialCamHeight = this.camera.top - this.camera.bottom; // Use current camera T/B
+                        const initialCamHeight = this.camera.top - this.camera.bottom;
                         initialVentilatorScale = (initialCamHeight > 0.1 && ventSize.y > 0.001) ? (initialCamHeight * 0.8) / ventSize.y : 1;
                         console.log(`Calculated initialVentilatorScale for ${config.name}: ${initialVentilatorScale}`);
                         modelGroup.scale.setScalar(initialVentilatorScale * config.scale);
@@ -344,51 +345,56 @@ class App {
 
                     // Add the processed group to the scene and expand bounds
                     this.interactiveGroup.add(modelGroup);
-                    this.totalBounds.expandByObject(modelGroup); // Expand by the positioned/scaled group
+                    this.totalBounds.expandByObject(modelGroup);
+
+                    // Store in map for later ordering
+                    modelMap.set(config.name, modelGroup);
                     
                     // Add clickable area for tube models
                     if (config.needsClickableArea) {
                         this.addClickableArea(modelGroup, config);
                     }
-                    
-                    // Store model groups in order for navigation
-                    this.modelGroups.push(modelGroup);
-                    
-                    console.log(`Processed and added model ${index + 1}/${results.length}: ${config.name}`);
                 });
+
+                // Now add models to modelGroups in clockwise order
+                const clockwiseOrder = [
+                    'Ventilator Tube Circuit',
+                    'Halyard Attachment Tube',
+                    'HEPA Filter Attachment',
+                    'Green Oxygen Hose',
+                    'Test Lung',
+                    'Pulse Oximeter',
+                    'Oxygen Regulator',
+                    'Gibeck Humid Vent',
+                    'HME to Entitle O2',
+                    'Oxygen Reservoir Bag Assembly',
+                    '731 Power Adapter'
+                ];
+
+                this.modelGroups = clockwiseOrder.map(name => modelMap.get(name)).filter(Boolean);
 
                 // --- Actions after ALL models are processed --- 
                 this.allModelsLoaded = true;
-                this.modelsReady = true; // Allow interactions
+                this.modelsReady = true;
                 console.log("Final calculated bounds MIN:", this.totalBounds.min);
                 console.log("Final calculated bounds MAX:", this.totalBounds.max);
                 
-                // Check if OrbitControls is initialized
-                if (!this.controls) {
-                    console.error("OrbitControls not initialized before fitCameraToBounds call!");
-                    // Initialize controls here if needed, or ensure it's done earlier
-                    this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
-                    // Add necessary configurations for controls if initializing here
-                }
-                
-                this.fitCameraToBounds(); // Fit camera now that bounds are complete
-                this.onWindowResize();    // Ensure initial viewport is correct
+                this.fitCameraToBounds();
+                this.onWindowResize();
                 console.log("Fit camera called after all models processed.");
-
             })
             .catch(results => {
                 console.error("Error loading one or more models:", results);
-                // Handle errors appropriately (e.g., show a message to the user)
-                if (Array.isArray(results)) { // Check if results is an array (might not be if Promise.all throws early)
+                if (Array.isArray(results)) {
                     results.forEach(({ error, config }) => {
                         if (config && error) {
-                             console.error(`Failed to load ${config.name}:`, error);
+                            console.error(`Failed to load ${config.name}:`, error);
                         }
                     });
                 } else {
-                     console.error("An unexpected error occurred during model loading:", results);
+                    console.error("An unexpected error occurred during model loading:", results);
                 }
-        });
+            });
     }
 
     onWindowResize() {
@@ -524,65 +530,47 @@ class App {
             console.log('Clicked model:', model.name, model); 
 
             const isZoomable = [
-                'Ventilator Tube', 'HEPA Filter Attachment', 'Halyard Attachment Tube', 
-                'Pulse Oximeter', 'Glbeck Humid Vent', 'Oxygen Regulator', 
-                'Test Lung', 'Green Oxygen Hose', '731 Power Adapter'
+                'Ventilator Tube Circuit', 'Ventilator Tube', 'HEPA Filter Attachment', 'Halyard Attachment Tube', 
+                'Pulse Oximeter', 'Gibeck Humid Vent', 'Oxygen Regulator', 
+                'Test Lung', 'Green Oxygen Hose', '731 Power Adapter', 'Oxygen Reservoir Bag Assembly', 'HME to Entitle O2'
             ].includes(model.name);
 
             if (this.isZoomed) {
-                // --- CASE 1: Clicked the CURRENTLY zoomed model ---
                 if (this.zoomedModel === model) {
                     console.log(model.name + ' (already zoomed) clicked. Zooming out.');
-                    this.zoomOut(); // No callback needed, default is to close panel
-                } 
-                // --- CASE 2: Clicked a DIFFERENT ZOOMABLE model ---
-                else if (isZoomable) { 
+                    this.zoomOut();
+                } else if (isZoomable) {
                     console.log(model.name + ' (zoomable) clicked while another is zoomed. Switching zoom.');
-                    this.zoomOut(() => { // Callback to zoom into the new model
+                    this.zoomOut(() => {
                         console.log("Zoom out finished, zooming into:", model.name);
                         this.zoomIn(model);
-                        this.showSidePanel(model); // Show panel for the new model
+                        this.showSidePanel(model);
                     });
-                } 
-                // --- CASE 3: Clicked a NON-ZOOMABLE model ---
-                else { 
+                } else {
                     console.log(model.name + ' (non-zoomable) clicked while zoomed. Zooming out and showing panel.');
-                    this.zoomOut(() => { // Callback to show panel for the non-zoomable model
+                    this.zoomOut(() => {
                         console.log("Zoom out finished, showing side panel for:", model.name);
                         this.showSidePanel(model);
                     });
                 }
             } else {
-                // --- CASE 4: Nothing is zoomed ---
                 if (isZoomable) {
                     console.log(model.name + ' (zoomable) clicked. Zooming in.');
-                    // --- Add Logging Before Zoom --- 
-                    if (model.name === 'Ventilator Tube') {
-                        console.log('--- Ventilator Tube Pre-Zoom State ---');
-                        console.log('Position:', model.position.clone());
-                        console.log('Scale:', model.scale.clone());
-                        console.log('Rotation:', model.rotation.clone());
-                        console.log('Camera Top/Bottom:', this.camera.top, this.camera.bottom);
-                        console.log('------------------------------------');
-                    }
-                    // --- End Logging ---
                     this.zoomIn(model);
-                    // Delay panel slightly to match zoom animation
-                    setTimeout(() => { this.showSidePanel(model); }, 300); 
+                    setTimeout(() => { this.showSidePanel(model); }, 300);
                 } else {
                     console.log(model.name + ' (non-zoomable) clicked. Showing panel.');
-                    this.showSidePanel(model); // Show panel immediately
+                    this.showSidePanel(model);
                 }
             }
         } else {
-             // --- CASE 5: Clicked on empty space ---
-             console.log('Clicked on empty space.');
-             if (this.isZoomed) {
-                 console.log("Zoomed in, zooming out due to empty space click.");
-                 this.zoomOut(); // Zoom out if clicked empty space while zoomed
-             } else {
-                 this.closeSidePanel(); // Close panel if open and clicked empty space
-             }
+            console.log('Clicked on empty space.');
+            if (this.isZoomed) {
+                console.log("Zoomed in, zooming out due to empty space click.");
+                this.zoomOut();
+            } else {
+                this.closeSidePanel();
+            }
         }
     }
     
@@ -599,89 +587,70 @@ class App {
         
         // Setup lights for this model
         this.setupModelLights(model);
-        
-        // Fade out other objects
-        this.fadeOutOtherObjects(model);
+
+        // Hide other objects immediately
+        this.interactiveGroup.children.forEach(object => {
+            if (object !== model && object.isGroup) {
+                object.visible = false;
+            }
+        });
 
         let targetScaleVector;
-        let targetPosition = new THREE.Vector3(0, 0, 5); // Default target position
+        // Calculate the offset for the side panel (panel width is typically 300-400px)
+        const sidePanelOffset = -15; // Adjust model position to the left to account for panel
+        let targetPosition = new THREE.Vector3(sidePanelOffset, 0, 5); // Default target position moved left
 
-        // --- Special Case: Tube, HEPA, Halyard, Pulse Ox, Glbeck, O2 Reg, Test Lung, Green Hose, Power Adapter - Scale x1.5 ONLY ---
-        if (model.name === 'Ventilator Tube' || model.name === 'HEPA Filter Attachment' || model.name === 'Halyard Attachment Tube' || model.name === 'Pulse Oximeter' || model.name === 'Glbeck Humid Vent' || model.name === 'Oxygen Regulator' || model.name === 'Test Lung' || model.name === 'Green Oxygen Hose' || model.name === '731 Power Adapter') {
-            console.log(`Applying fixed scale x1.5 and adjusted position for ${model.name}.`);
-            
-            // --- Calculate final scale vector: Multiply current scale by 1.5 ---
+        // Handle different model cases
+        if (model.name === 'Ventilator Tube') {
             targetScaleVector = model.scale.clone().multiplyScalar(1.5); 
-            console.log(`Target Scale Vector (current * 1.5) for ${model.name}:`, targetScaleVector);
-            // --- End Scale Calculation ---
-
-            // Adjust target position - Y=0 
-            targetPosition.set(0, 0, 5); // Vertically centered
-        
+        } else if (model.name === 'Pulse Oximeter') {
+            targetScaleVector = model.scale.clone().multiplyScalar(2.5);
+        } else if (model.name === 'Test Lung') {
+            targetScaleVector = model.scale.clone().multiplyScalar(2.5);
+        } else if (model.name === 'Green Oxygen Hose') {
+            targetScaleVector = model.scale.clone().multiplyScalar(3.0);
+        } else if (model.name === '731 Power Adapter') {
+            targetScaleVector = model.scale.clone().multiplyScalar(2.0);
+        } else if (model.name === 'Halyard Attachment Tube') {
+            targetScaleVector = model.scale.clone().multiplyScalar(2.0);
+        } else if (model.name === 'HEPA Filter Attachment') {
+            targetScaleVector = model.scale.clone().multiplyScalar(2.0);
+        } else if (model.name === 'Gibeck Humid Vent') {
+            targetScaleVector = model.scale.clone().multiplyScalar(4.0);
+        } else if (model.name === 'Oxygen Regulator') {
+            targetScaleVector = model.scale.clone().multiplyScalar(4.0);
+        } else if (model.name === 'Oxygen Reservoir Bag Assembly') {
+            targetScaleVector = model.scale.clone().multiplyScalar(2.5);
+        } else if (model.name === 'HME to Entitle O2') {
+            targetScaleVector = model.scale.clone().multiplyScalar(2.5);
         } else {
-            // --- Auto-Detect Scaling for all other models ---
-            console.log(`Applying auto-detect scaling for: ${model.name}`);
+            // Auto-detect scaling for other models
             const viewHeight = this.camera.top - this.camera.bottom;
             const viewWidth = this.camera.right - this.camera.left;
-            const targetSize = Math.min(viewHeight, viewWidth) * 0.8; // Target 80%
+            const targetSize = Math.min(viewHeight, viewWidth) * 0.8;
 
-            let modelSize;
-            const currentGroupScale = model.scale.clone();
-            const groupScaleMatrix = new THREE.Matrix4().scale(currentGroupScale);
-
-            // Method 1: Size of whole group
             const boxGroup = new THREE.Box3().setFromObject(model); 
-            const modelSizeGroup = boxGroup.getSize(new THREE.Vector3());
-
-            // Method 2: Combined size of visible meshes
-            const boxVisible = new THREE.Box3();
-            let visibleMeshFound = false;
-            model.traverse((child) => {
-                if (child.isMesh && child.visible && !(child.material && child.material.visible === false)) {
-                    const meshBoxLocal = new THREE.Box3().setFromObject(child);
-                    child.updateWorldMatrix(true, false);
-                    const meshWorldMatrix = child.matrixWorld.clone();
-                    const groupWorldMatrixInv = model.matrixWorld.clone().invert(); 
-                    meshWorldMatrix.premultiply(groupWorldMatrixInv);
-                    meshBoxLocal.applyMatrix4(meshWorldMatrix);
-                    boxVisible.union(meshBoxLocal);
-                    visibleMeshFound = true;
-                }
-            });
-            boxVisible.applyMatrix4(groupScaleMatrix); 
-            const modelSizeVisible = visibleMeshFound ? boxVisible.getSize(new THREE.Vector3()) : modelSizeGroup;
-
-            // Compare and decide which size to use
-            const sizeThresholdFactor = 1.5;
-            if (visibleMeshFound && modelSizeGroup.length() > modelSizeVisible.length() * sizeThresholdFactor) {
-                modelSize = modelSizeVisible;
-            } else {
-                modelSize = modelSizeGroup;
-            }
-
-            // Calculate scale factors (common logic)
+            const modelSize = boxGroup.getSize(new THREE.Vector3());
+            
             const scaleFactorX = modelSize.x > 0.001 ? targetSize / modelSize.x : 1;
             const scaleFactorY = modelSize.y > 0.001 ? targetSize / modelSize.y : 1;
             const requiredScaleFactor = Math.min(scaleFactorX, scaleFactorY);
 
-            // Calculate final target scale vector
             targetScaleVector = model.scale.clone().multiplyScalar(requiredScaleFactor);
-            // --- End Auto-Detect Scaling ---
         }
         
-        // --- Apply Animations (Common to all models) ---
+        // Apply animations
         gsap.to(model.position, {
             x: targetPosition.x,
-            y: targetPosition.y, // Use the potentially adjusted Y
+            y: targetPosition.y,
             z: targetPosition.z,
             duration: 1,
             ease: "power2.inOut",
             onComplete: () => {
-                this.isRotating = true; // Allow rotation after zoom completes
+                this.isRotating = true;
             }
         });
         
-        // --- Animate Scale for ALL models again ---
         gsap.to(model.scale, {
             x: targetScaleVector.x,
             y: targetScaleVector.y,
@@ -720,14 +689,10 @@ class App {
             this.modelLights.delete(model);
         }
         
-        // Fade in all objects
-        this.fadeInAllObjects();
-        
         // Get original transform values
         const origPos = model.userData.originalPosition;
         const origScale = model.userData.originalScale;
         const origRot = model.userData.originalRotation;
-        console.log(`[ZoomOut] Restoring ${model.name} to Original Rotation:`, origRot); // Log original rotation
         
         // Use GSAP to animate back to original transform
         gsap.to(model.position, {
@@ -755,18 +720,15 @@ class App {
             ease: "power2.inOut",
             onComplete: () => {
                 // Reset zoom state first
-                const previouslyZoomedModel = this.zoomedModel; // Keep ref if needed
                 this.isZoomed = false;
                 this.zoomedModel = null;
 
-                // Restore bounding box visibility 
-                // REMOVE: if (this.showBoundingBoxes) {
-                // REMOVE:     this.boundingBoxes.forEach(box => {
-                // REMOVE:         if (box) {
-                // REMOVE:             box.visible = true;
-                // REMOVE:         }
-                // REMOVE:     });
-                // REMOVE: }
+                // Show all other models after the zoomed model is back in place
+                this.interactiveGroup.children.forEach(object => {
+                    if (object.isGroup) {
+                        object.visible = true;
+                    }
+                });
 
                 // Execute the callback if provided, otherwise close the panel
                 if (onCompleteCallback && typeof onCompleteCallback === 'function') {
@@ -918,7 +880,7 @@ class App {
         let content = '';
         
         // Add model name
-        const displayName = model.name === 'Ventilator Tube' ? 'Ventilator Circuit' : model.name;
+        const displayName = model.name === 'Ventilator Tube Circuit' ? 'Ventilator Circuit' : model.name;
         content += `
             <div style="
                 background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
@@ -937,7 +899,7 @@ class App {
         
         // Add description based on model
         let description = '';
-            if (model.name === 'Ventilator Tube') {
+            if (model.name === 'Ventilator Tube Circuit') {
             description = `
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                     <div style="
@@ -960,7 +922,7 @@ class App {
                             border-top-left-radius: 8px;
                             border-bottom-left-radius: 8px;
                         "></div>
-                            Connects the ventilator to the patient
+                        Connects the ventilator to the patient for reliable breathing support
                     </div>
                     <div style="
                         background: rgba(28, 36, 48, 0.9);
@@ -982,7 +944,7 @@ class App {
                             border-top-left-radius: 8px;
                             border-bottom-left-radius: 8px;
                         "></div>
-                            Delivers oxygen and removes exhaled air
+                        Delivers oxygen and removes exhaled air efficiently
                     </div>
                     <div style="
                         background: rgba(28, 36, 48, 0.9);
@@ -1004,7 +966,7 @@ class App {
                             border-top-left-radius: 8px;
                             border-bottom-left-radius: 8px;
                         "></div>
-                            Proper assembly ensures effective ventilation and minimizes air leaks
+                        Essential component for proper ventilation and patient care
                     </div>
                 </div>
             `;
@@ -1221,7 +1183,7 @@ class App {
                     </div>
                 </div>
                 `;
-            } else if (model.name === 'Glbeck Humid Vent') {
+            } else if (model.name === 'Gibeck Humid Vent') {
             description = `
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                     <div style="
@@ -1576,6 +1538,77 @@ class App {
                     </div>
                 </div>
             `;
+        } else if (model.name === 'Oxygen Reservoir Bag Assembly') {
+            description = `
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Serves as a reservoir for oxygen during exhalation
+                    </div>
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Interfaces with the ventilator and low-flow oxygen hose
+                    </div>
+                    <div style="
+                        background: rgba(28, 36, 48, 0.9);
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-size: 15px;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    ">
+                        <div style="
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            bottom: 0;
+                            width: 4px;
+                            background: linear-gradient(90deg, #00308F 0%, #0057B8 100%);
+                            border-top-left-radius: 8px;
+                            border-bottom-left-radius: 8px;
+                        "></div>
+                        Allows ambient air intake if oxygen supply fails or tidal volume exceeds supply
+                    </div>
+                </div>
+            `;
         } else if (model.userData && model.userData.tooltipText) {
             description = model.userData.tooltipText;
         }
@@ -1591,8 +1624,16 @@ class App {
     closeSidePanel() {
         if (!this.sidePanel) return;
         
-        this.sidePanel.classList.remove('open');
-        this.sidePanelOpen = false;
+        // If we're zoomed in, zoom out first
+        if (this.isZoomed && this.zoomedModel) {
+            this.zoomOut(() => {
+                this.sidePanel.classList.remove('open');
+                this.sidePanelOpen = false;
+            });
+        } else {
+            this.sidePanel.classList.remove('open');
+            this.sidePanelOpen = false;
+        }
     }
 
     // Helper to find the parent model of an intersected object
@@ -1716,49 +1757,19 @@ class App {
     // --- UPDATED HELPER FUNCTIONS for fading ---
 
     fadeOutOtherObjects(selectedObject, duration = 0.8) {
-        this.fadeInAllObjects(0);
-
         this.interactiveGroup.children.forEach(object => {
             if (object !== selectedObject && object.isGroup) {
-                object.traverse((child) => {
-                    if (child.isMesh && child.material) {
-                        const materials = Array.isArray(child.material) ? child.material : [child.material];
-                        materials.forEach(material => {
-                            if (!this.originalMaterialStates.has(material)) {
-                                this.originalMaterialStates.set(material, {
-                                    originalOpacity: material.opacity,
-                                    originalTransparent: material.transparent
-                                });
-                            }
-                            material.transparent = true;
-                            gsap.to(material, { 
-                                opacity: 0.05, // Reduced from 0.15 to be much less visible
-                                duration: duration,
-                                ease: "power2.inOut"
-                            });
-                        });
-                    }
-                });
+                object.visible = false;
             }
         });
     }
 
     fadeInAllObjects(duration = 0.5) {
-        this.originalMaterialStates.forEach((state, material) => {
-            // Animate opacity back to original
-            gsap.to(material, {
-                opacity: state.originalOpacity,
-                duration: duration,
-                ease: "power1.inOut",
-                onComplete: () => {
-                    // Restore original transparency state ONLY if opacity is back to normal (or target is > 0)
-                    if (state.originalOpacity > 0) { 
-                       material.transparent = state.originalTransparent;
-                    }
-                }
-            });
+        this.interactiveGroup.children.forEach(object => {
+            if (object.isGroup) {
+                object.visible = true;
+            }
         });
-        this.originalMaterialStates.clear(); // Clear the map after initiating the restore
     }
 
     // --- END UPDATED HELPER FUNCTIONS ---
@@ -1813,17 +1824,17 @@ class App {
     // Add this new method after loadModels
     addClickableArea(modelGroup, config) {
         // Skip if not one of our target models
-        if (!['Ventilator Tube', 'Halyard Attachment Tube', 'Pulse Oximeter', 'Glbeck Humid Vent', 'Green Oxygen Hose', '731 Power Adapter'].includes(modelGroup.name)) return;
+        if (!['Ventilator Tube Circuit', 'Halyard Attachment Tube', 'Pulse Oximeter', 'Gibeck Humid Vent', 'Green Oxygen Hose', '731 Power Adapter'].includes(modelGroup.name)) return;
 
         // Create geometry based on the model
         let planeGeometry;
-        if (modelGroup.name === 'Ventilator Tube') {
+        if (modelGroup.name === 'Ventilator Tube Circuit') {
             planeGeometry = new THREE.PlaneGeometry(2, 6);
         } else if (modelGroup.name === 'Halyard Attachment Tube') {
             planeGeometry = new THREE.PlaneGeometry(10, 6);
         } else if (modelGroup.name === 'Pulse Oximeter') {
             planeGeometry = new THREE.PlaneGeometry(8, 8);
-        } else if (modelGroup.name === 'Glbeck Humid Vent') {
+        } else if (modelGroup.name === 'Gibeck Humid Vent') {
             planeGeometry = new THREE.PlaneGeometry(4, 4);
         } else if (modelGroup.name === 'Green Oxygen Hose') {
             planeGeometry = new THREE.PlaneGeometry(6, 6);
@@ -1850,7 +1861,7 @@ class App {
         } else if (modelGroup.name === 'Pulse Oximeter') {
             clickableArea.rotation.set(0, Math.PI/2, 0);
             clickableArea.position.set(0, 0, 0);
-        } else if (modelGroup.name === 'Glbeck Humid Vent') {
+        } else if (modelGroup.name === 'Gibeck Humid Vent') {
             clickableArea.rotation.set(0, Math.PI/2, 0);
             clickableArea.position.set(0, 0, 0);
         } else if (modelGroup.name === 'Green Oxygen Hose') {
@@ -1938,14 +1949,15 @@ class App {
         // Create audio elements for each model
         const modelAudioMap = {
             'Pulse Oximeter': 'Pulse Ox.mp3',
-            'Glbeck Humid Vent': 'glibeck.mp3',
+            'Gibeck Humid Vent': 'glibeck.mp3',
             'Green Oxygen Hose': 'Green Oxygen hose.mp3',
             'HEPA Filter Attachment': 'Heepa.mp3',
             'Test Lung': 'Test lung.mp3',
             '731 Power Adapter': 'Ac Power.mp3',
             'Oxygen Regulator': 'Oxygen reg.mp3',
-            'Ventilator Tube': 'Ventlator Circut.mp3',
-            'Halyard Attachment Tube': 'hylard.mp3'
+            'Ventilator Tube Circuit': 'Ventlator Circut.mp3',
+            'Halyard Attachment Tube': 'hylard.mp3',
+            'Oxygen Reservoir Bag Assembly': 'Reservoir Bag.mp3'
         };
 
         // Load each audio file
